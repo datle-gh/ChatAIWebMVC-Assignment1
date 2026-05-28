@@ -1,0 +1,195 @@
+@model ChatSessionListViewModel
+
+@{
+    ViewData["Title"] = "Lịch sử hội thoại";
+    Layout = "_Layout";
+}
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#3525cd",
+                    "primary-container": "#4f46e5",
+                    "primary-fixed": "#e2dfff",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#dad7ff",
+                    "secondary-container": "#d0e1fb",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container": "#eceef0",
+                    "surface-container-high": "#e6e8ea",
+                    "surface-bright": "#f7f9fb",
+                    "background": "#f7f9fb",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#464555",
+                    "outline": "#777587",
+                    "outline-variant": "#c7c4d8",
+                    "error": "#ba1a1a",
+                }
+            }
+        }
+    };
+</script>
+
+<div class="bg-background min-h-screen p-6 md:p-10 space-y-6">
+
+    @* Page Header *@
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-on-surface mb-2" style="font-family:'Be Vietnam Pro',sans-serif">
+                Lịch sử hội thoại
+            </h1>
+            <p class="text-on-surface-variant" style="font-family:'Inter',sans-serif">
+                Xem lại và tiếp tục các phiên học AI của bạn.
+            </p>
+        </div>
+        <a asp-controller="Dashboard" asp-action="SelectSubject"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all active:scale-95 shadow-sm hover:shadow-md flex-shrink-0"
+           style="background:#4f46e5;font-family:'Inter',sans-serif;text-decoration:none">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Tạo phiên mới
+        </a>
+    </div>
+
+    @if (Model.Sessions.Count == 0)
+    {
+        <div class="bg-surface-container-lowest rounded-2xl p-16 text-center border border-surface-container-high"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.04)">
+            <span class="material-symbols-outlined text-on-surface-variant mb-4 block" style="font-size:56px">forum</span>
+            <h2 class="text-xl font-semibold text-on-surface mb-2" style="font-family:'Be Vietnam Pro',sans-serif">Chưa có phiên hội thoại</h2>
+            <p class="text-on-surface-variant mb-6" style="font-family:'Inter',sans-serif">
+                Bắt đầu đặt câu hỏi để lưu lại lịch sử học tập của bạn.
+            </p>
+            <a asp-controller="Dashboard" asp-action="SelectSubject"
+               class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all active:scale-95"
+               style="background:#4f46e5;font-family:'Inter',sans-serif;text-decoration:none">
+                <span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+                Bắt đầu hỏi chatbot
+            </a>
+        </div>
+    }
+    else
+    {
+        @* Table container *@
+        <div class="bg-surface-container-lowest rounded-2xl border border-surface-container-high overflow-hidden"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.04)">
+
+            @* Table - use actual HTML table for precise column alignment *@
+            <table class="w-full" style="border-collapse:collapse;font-family:'Inter',sans-serif">
+                <thead>
+                    <tr class="border-b border-surface-container-high bg-surface-bright">
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-5 py-3" style="width:40%">
+                            Tiêu đề phiên chat
+                        </th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-4 py-3" style="width:18%">
+                            Môn học
+                        </th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-4 py-3" style="width:18%">
+                            Thời gian tạo
+                        </th>
+                        <th class="text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-4 py-3" style="width:10%">
+                            Tin nhắn
+                        </th>
+                        <th class="text-right text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-5 py-3" style="width:14%">
+                            Hành động
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-surface-container-high">
+                    @foreach (var session in Model.Sessions)
+                    {
+                        var displayTime = (session.UpdatedAt ?? session.CreatedAt).ToLocalTime();
+                        var timeAgo = GetTimeAgo(displayTime);
+
+                        <tr class="hover:bg-surface-bright transition-colors group">
+                            @* Title *@
+                            <td class="px-5 py-4 align-middle">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-primary-container"
+                                         style="background:rgba(79,70,229,0.1)">
+                                        <span class="material-symbols-outlined text-[18px]">forum</span>
+                                    </div>
+                                    <span class="font-semibold text-on-surface group-hover:text-primary transition-colors truncate block max-w-xs"
+                                          style="font-family:'Be Vietnam Pro',sans-serif">@session.Title</span>
+                                </div>
+                            </td>
+
+                            @* Subject *@
+                            <td class="px-4 py-4 align-middle">
+                                @if (!string.IsNullOrWhiteSpace(session.SubjectName))
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold"
+                                          style="background:#d0e1fb;color:#38485d">
+                                        @session.SubjectName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-on-surface-variant">—</span>
+                                }
+                            </td>
+
+                            @* Time *@
+                            <td class="px-4 py-4 align-middle text-sm text-on-surface-variant">
+                                @timeAgo
+                            </td>
+
+                            @* Message count *@
+                            <td class="px-4 py-4 align-middle text-center">
+                                @if (session.MessageCount > 0)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-semibold bg-surface-container text-on-surface"
+                                          title="@session.MessageCount tin nhắn">
+                                        <span class="material-symbols-outlined text-[13px] text-on-surface-variant">chat_bubble</span>
+                                        @session.MessageCount
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-on-surface-variant">—</span>
+                                }
+                            </td>
+
+                            @* Action *@
+                            <td class="px-5 py-4 align-middle text-right">
+                                <a asp-controller="Chat" asp-action="History" asp-route-sessionId="@session.Id"
+                                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 active:scale-95 hover:shadow-sm"
+                                   style="background:#f2f4f6;border-color:#c7c4d8;color:#191c1e;text-decoration:none"
+                                   onmouseover="this.style.background='#e2dfff';this.style.borderColor='#4f46e5';this.style.color='#3525cd'"
+                                   onmouseout="this.style.background='#f2f4f6';this.style.borderColor='#c7c4d8';this.style.color='#191c1e'">
+                                    Xem lại
+                                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @* Footer *@
+            <div class="px-5 py-3 border-t border-surface-container-high bg-surface-bright text-center">
+                <p class="text-xs text-on-surface-variant" style="font-family:'Inter',sans-serif">
+                    Hiển thị @Model.Sessions.Count phiên hội thoại gần nhất
+                </p>
+            </div>
+        </div>
+    }
+</div>
+
+@functions {
+    static string GetTimeAgo(DateTime dt)
+    {
+        var diff = DateTime.Now - dt;
+        if (diff.TotalMinutes < 1) return "Vừa xong";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} phút trước";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} giờ trước";
+        if (diff.TotalDays < 2) return "Hôm qua";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays} ngày trước";
+        return dt.ToString("dd/MM/yyyy HH:mm");
+    }
+}

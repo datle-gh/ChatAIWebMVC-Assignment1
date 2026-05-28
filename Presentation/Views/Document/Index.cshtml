@@ -1,0 +1,594 @@
+@using BusinessObject.Enums
+@model DocumentIndexViewModel
+
+@{
+    bool isStudent = User.IsInRole("Student");
+    bool inSubjectView = Model.SubjectId.HasValue;
+    var selectedSubject = inSubjectView ? Model.Subjects.FirstOrDefault(s => s.Id == Model.SubjectId) : null;
+
+    ViewData["Title"] = inSubjectView
+        ? (selectedSubject != null ? $"Tài liệu - {selectedSubject.SubjectName}" : "Chi tiết tài liệu môn học")
+        : "Kho tài liệu";
+}
+
+@* ══════════════════════════════════════════════════════════════════════
+   VIEW A — Grid môn học (khi chưa chọn môn)
+   ══════════════════════════════════════════════════════════════════════ *@
+@if (!inSubjectView)
+{
+    <div class="page-heading">
+        <h1 class="page-title">Kho tài liệu</h1>
+        <p class="page-subtitle">Truy cập tài liệu học tập đã được AI phân tích và lập chỉ mục theo từng môn học.</p>
+    </div>
+
+    @if (Model.Subjects.Count == 0)
+    {
+        <div class="surface-card padded text-center py-5">
+            <span class="material-symbols-outlined icon-fill" style="font-size:3.5rem;color:var(--outline-variant)">folder_off</span>
+            <h2 class="h4 fw-bold mt-3">Chưa có môn học nào</h2>
+            <p class="text-muted">Bạn chưa được đăng ký vào môn học nào có tài liệu.</p>
+        </div>
+    }
+    else
+    {
+        @* Subject card grid *@
+        <div class="doc-subject-grid">
+            @{
+                // Icon colors cycling
+                string[] iconBgs = { "rgba(226,223,255,0.6)", "rgba(255,219,204,0.5)", "rgba(208,225,251,0.6)", "rgba(254,240,138,0.4)", "rgba(255,218,214,0.4)" };
+                string[] iconColors = { "var(--primary-container)", "var(--tertiary-container)", "var(--secondary)", "#a16207", "var(--danger)" };
+                string[] icons = { "menu_book", "science", "computer", "history_edu", "calculate" };
+                int idx = 0;
+            }
+            @foreach (var subject in Model.Subjects)
+            {
+                var docCount = Model.Documents.Count(d => d.SubjectId == subject.Id);
+                var iconBg   = iconBgs[idx % iconBgs.Length];
+                var iconColor= iconColors[idx % iconColors.Length];
+                var icon     = icons[idx % icons.Length];
+                idx++;
+
+                <a href="@Url.Action("Index", "Document", new { subjectId = subject.Id })"
+                   class="doc-subject-card" aria-label="Xem tài liệu môn @subject.SubjectName">
+                    <div class="doc-subject-card-top">
+                        <div class="doc-subject-icon" style="background:@iconBg;color:@iconColor">
+                            <span class="material-symbols-outlined icon-fill" aria-hidden="true">@icon</span>
+                        </div>
+                        <span class="doc-subject-code">@subject.SubjectCode</span>
+                    </div>
+                    <h3 class="doc-subject-name">@subject.SubjectName</h3>
+                    <p class="doc-subject-count">
+                        <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle">library_books</span>
+                        @docCount tài liệu đã index
+                    </p>
+                    <div class="doc-subject-btn">
+                        <span>Xem tài liệu</span>
+                        <span class="material-symbols-outlined" style="font-size:1.1rem">arrow_forward</span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+}
+else
+{
+    @* ══════════════════════════════════════════════════════════════════════
+       VIEW B — Bảng tài liệu chi tiết theo môn học
+       ══════════════════════════════════════════════════════════════════════ *@
+
+    @* Back breadcrumb *@
+    <div class="mb-3">
+        <a class="doc-back-link" asp-action="Index">
+            <span class="material-symbols-outlined" style="font-size:1.1rem;transition:transform 150ms ease" aria-hidden="true">arrow_back</span>
+            Quay lại danh sách môn học
+        </a>
+    </div>
+
+    @* Page header *@
+    <div class="page-heading d-flex flex-column flex-xl-row justify-content-between gap-3">
+        <div>
+            <h1 class="page-title">@(selectedSubject?.SubjectName ?? "Tài liệu môn học")</h1>
+            <p class="page-subtitle">Quản lý và tra cứu tài liệu học tập, bài giảng và tài nguyên liên quan đến môn học.</p>
+        </div>
+        @if (!isStudent)
+        {
+            <a class="btn btn-primary px-4 align-self-start" asp-action="Upload">
+                <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle;margin-right:4px" aria-hidden="true">upload_file</span>
+                Tải tài liệu lên
+            </a>
+        }
+    </div>
+
+    @* Toolbar / search within subject *@
+    <div class="surface-card overflow-hidden mb-0">
+        <div class="doc-detail-toolbar">
+            <form asp-action="Index" method="get" class="doc-detail-search-form">
+                <input type="hidden" name="subjectId" value="@Model.SubjectId" />
+                <div class="input-with-icon" style="flex:1;max-width:420px">
+                    <span class="material-symbols-outlined input-symbol" style="font-size:1.1rem">search</span>
+                    <input id="searchTerm" name="searchTerm" value="@Model.SearchTerm"
+                           class="form-control" style="min-height:40px;padding-left:42px"
+                           placeholder="Tìm kiếm tên tài liệu trong môn này..." />
+                </div>
+                <button type="submit" class="btn btn-outline-primary" style="min-height:40px;padding:0 16px">Tìm</button>
+            </form>
+            <div class="doc-detail-count">
+                Hiển thị <strong>@Model.Documents.Count</strong> tài liệu
+            </div>
+        </div>
+
+        @if (Model.Documents.Count == 0)
+        {
+            <div class="p-5 text-center">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                     style="width:64px;height:64px;background:var(--surface-container)">
+                    <span class="material-symbols-outlined" style="font-size:2rem;color:var(--on-surface-variant)">folder_off</span>
+                </div>
+                <h2 class="h5 fw-bold">Chưa có tài liệu nào</h2>
+                <p class="text-muted mb-0" style="font-size:0.875rem">
+                    @if (!isStudent)
+                    {
+                        <span>Hãy tải tài liệu đầu tiên cho môn học này.</span>
+                    }
+                    else
+                    {
+                        <span>Môn học này chưa có tài liệu được tải lên. Vui lòng quay lại sau.</span>
+                    }
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table doc-detail-table align-middle" id="documentTable">
+                    <thead>
+                        <tr>
+                            <th style="width:52%">Tên tài liệu</th>
+                            <th style="width:12%">Loại file</th>
+                            <th style="width:18%">Ngày tải lên</th>
+                            <th style="width:18%" class="text-end">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var doc in Model.Documents)
+                        {
+                            <tr class="doc-detail-row">
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="doc-detail-file-icon @GetFileIconClass(doc.FileType)" aria-hidden="true">
+                                            <span class="material-symbols-outlined icon-fill">@GetFileIcon(doc.FileType)</span>
+                                        </div>
+                                        <span class="doc-detail-filename">@doc.OriginalFileName</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted" style="font-size:0.875rem">@doc.FileType</td>
+                                <td class="text-muted" style="font-size:0.875rem">
+                                    @doc.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-1">
+                                        @if (!isStudent)
+                                        {
+                                            <button class="doc-row-btn doc-row-btn-primary"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#doc-detail-@doc.Id"
+                                                    aria-expanded="false"
+                                                    aria-controls="doc-detail-@doc.Id"
+                                                    title="Xem chi tiết">
+                                                <span class="material-symbols-outlined" style="font-size:1rem">visibility</span>
+                                                <span>Xem</span>
+                                            </button>
+                                        }
+                                        <button class="doc-row-btn doc-row-btn-secondary" type="button" title="Đặt câu hỏi về tài liệu"
+                                                onclick="window.location='@Url.Action("Index", "Chat", new { subjectId = doc.SubjectId })'">
+                                            <span class="material-symbols-outlined" style="font-size:1rem">psychology</span>
+                                            <span>Hỏi AI</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            @if (!isStudent)
+                            {
+                                <tr class="doc-detail-expand-row">
+                                    <td colspan="4" style="padding:0 16px">
+                                        <div id="doc-detail-@doc.Id" class="collapse">
+                                            <div class="doc-detail-panel">
+                                                <div class="row g-4">
+                                                    <div class="col-lg-4">
+                                                        <div class="d-flex align-items-center gap-2 mb-3">
+                                                            <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--primary-container)">info</span>
+                                                            <h3 class="h6 fw-bold mb-0">Metadata</h3>
+                                                        </div>
+                                                        <dl class="doc-detail-dl">
+                                                            <dt>Trạng thái</dt>
+                                                            <dd>
+                                                                <span class="status-badge @GetStatusClass(doc.Status) d-inline-flex align-items-center gap-1" style="font-size:0.78rem">
+                                                                    @GetStatusText(doc.Status)
+                                                                </span>
+                                                            </dd>
+                                                            <dt>Dung lượng</dt>
+                                                            <dd>@FormatFileSize(doc.FileSizeBytes)</dd>
+                                                            <dt>Số chunks</dt>
+                                                            <dd>@(doc.ChunkCount == 0 ? "--" : doc.ChunkCount.ToString("N0"))</dd>
+                                                            <dt>Tổng token</dt>
+                                                            <dd>@(doc.TotalTokenCount?.ToString("N0") ?? "--")</dd>
+                                                            @if (!string.IsNullOrWhiteSpace(doc.ErrorMessage))
+                                                            {
+                                                                <dt>Lỗi</dt>
+                                                                <dd class="text-danger">@doc.ErrorMessage</dd>
+                                                            }
+                                                        </dl>
+                                                    </div>
+                                                    <div class="col-lg-8">
+                                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--primary-container)">segment</span>
+                                                                <h3 class="h6 fw-bold mb-0">Chunk Preview</h3>
+                                                            </div>
+                                                            @if (doc.PreviewChunkIndex.HasValue)
+                                                            {
+                                                                <span class="chip">Chunk #@doc.PreviewChunkIndex</span>
+                                                            }
+                                                        </div>
+                                                        <div class="chunk-preview">
+                                                            @(doc.PreviewContent ?? "Chưa có nội dung chunk để xem trước.")
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+<style>
+    /* ── Subject Grid ── */
+    .doc-subject-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+        align-items: stretch;
+    }
+
+    @@media (min-width: 768px) {
+        .doc-subject-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (min-width: 1280px) {
+        .doc-subject-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    .doc-subject-card {
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        min-height: 220px;
+        background: var(--surface-lowest);
+        border: 1px solid rgba(199,196,216,0.4);
+        border-radius: 16px;
+        box-shadow: var(--shadow-indigo);
+        text-decoration: none;
+        color: var(--on-surface);
+        transition: border-color 220ms ease, box-shadow 220ms ease, transform 150ms ease;
+        cursor: pointer;
+    }
+
+    .doc-subject-card:hover {
+        border-color: rgba(79,70,229,0.3);
+        box-shadow: 0 8px 24px rgba(79,70,229,0.1);
+        transform: translateY(-2px);
+        color: var(--on-surface);
+    }
+
+    .doc-subject-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 14px;
+    }
+
+    .doc-subject-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        font-size: 1.4rem;
+    }
+
+    .doc-subject-code {
+        font-size: 0.72rem;
+        font-weight: 700;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--on-surface-variant);
+        background: var(--surface-container);
+        padding: 3px 8px;
+        border-radius: 4px;
+    }
+
+    .doc-subject-name {
+        font-family: 'Be Vietnam Pro', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 600;
+        line-height: 1.35;
+        margin: 0 0 6px;
+        transition: color 160ms ease;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .doc-subject-card:hover .doc-subject-name {
+        color: var(--primary-container);
+    }
+
+    .doc-subject-count {
+        font-size: 0.82rem;
+        color: var(--on-surface-variant);
+        margin: 0 0 16px;
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .doc-subject-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: auto;
+        padding: 9px 0;
+        background: var(--surface-container);
+        border-radius: var(--radius-sm);
+        font-size: 0.82rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        color: var(--primary-container);
+        transition: background-color 160ms ease, color 160ms ease;
+    }
+
+    .doc-subject-card:hover .doc-subject-btn {
+        background: var(--primary-container);
+        color: #fff;
+    }
+
+    /* ── Detail view ── */
+    .doc-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--secondary);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 4px 8px;
+        border-radius: var(--radius-sm);
+        margin-left: -8px;
+        transition: color 150ms ease, background 150ms ease;
+    }
+
+    .doc-back-link:hover {
+        color: var(--primary-container);
+        background: rgba(79,70,229,0.05);
+    }
+
+    .doc-back-link:hover .material-symbols-outlined {
+        transform: translateX(-3px);
+        transition: transform 150ms ease;
+    }
+
+    .doc-detail-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 20px;
+        border-bottom: 1px solid rgba(199,196,216,0.4);
+        background: rgba(247,249,251,0.5);
+        flex-wrap: wrap;
+    }
+
+    .doc-detail-search-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .doc-detail-count {
+        font-size: 0.82rem;
+        color: var(--on-surface-variant);
+        font-family: 'Inter', sans-serif;
+        white-space: nowrap;
+    }
+
+    .doc-detail-table {
+        margin: 0;
+    }
+
+    .doc-detail-table thead tr {
+        background: var(--surface-container);
+    }
+
+    .doc-detail-table th {
+        color: var(--on-surface-variant);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 12px 20px;
+        border-bottom: 1px solid rgba(199,196,216,0.5);
+    }
+
+    .doc-detail-table td {
+        padding: 16px 20px;
+        vertical-align: middle;
+    }
+
+    .doc-detail-row:hover {
+        background: rgba(247,249,251,0.5);
+    }
+
+    .doc-detail-expand-row td {
+        padding: 0 !important;
+        border-top: 0 !important;
+    }
+
+    .doc-detail-file-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+    }
+
+    .doc-detail-file-icon.icon-pdf {
+        background: rgba(255,218,214,0.55);
+        color: var(--danger);
+    }
+
+    .doc-detail-file-icon.icon-pptx {
+        background: #ffdbcc;
+        color: #a44100;
+    }
+
+    .doc-detail-file-icon.icon-docx {
+        background: rgba(226,223,255,0.7);
+        color: var(--primary-container);
+    }
+
+    .doc-detail-file-icon.icon-default {
+        background: var(--surface-container);
+        color: var(--secondary);
+    }
+
+    .doc-detail-filename {
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: var(--on-surface);
+        transition: color 150ms ease;
+    }
+
+    .doc-detail-row:hover .doc-detail-filename {
+        color: var(--primary-container);
+    }
+
+    .doc-row-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        font-size: 0.78rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .doc-row-btn-primary {
+        color: var(--primary-container);
+        background: rgba(79,70,229,0.07);
+    }
+
+    .doc-row-btn-primary:hover {
+        background: rgba(79,70,229,0.14);
+    }
+
+    .doc-row-btn-secondary {
+        color: var(--secondary);
+        background: var(--surface-container);
+    }
+
+    .doc-row-btn-secondary:hover {
+        color: var(--on-surface);
+        background: var(--surface-high);
+    }
+
+    .doc-detail-panel {
+        margin: 12px 0 16px;
+        padding: 20px;
+        background: var(--surface);
+        border: 1px solid rgba(199,196,216,0.5);
+        border-radius: var(--radius-lg);
+    }
+
+    .doc-detail-dl dt {
+        font-size: 0.75rem;
+        color: var(--on-surface-variant);
+        font-weight: 600;
+        margin-top: 10px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .doc-detail-dl dd {
+        font-size: 0.875rem;
+        margin: 2px 0 0;
+    }
+</style>
+
+@functions {
+    private static string GetFileIcon(string fileType) => fileType.ToUpperInvariant() switch
+    {
+        "PDF"  => "picture_as_pdf",
+        "DOCX" => "description",
+        "PPTX" => "slideshow",
+        _      => "insert_drive_file"
+    };
+
+    private static string GetFileIconClass(string fileType) => fileType.ToUpperInvariant() switch
+    {
+        "PDF"  => "icon-pdf",
+        "DOCX" => "icon-docx",
+        "PPTX" => "icon-pptx",
+        _      => "icon-default"
+    };
+
+    private static string GetStatusClass(DocumentStatus status) => status switch
+    {
+        DocumentStatus.Indexed    => "status-indexed",
+        DocumentStatus.Processing => "status-processing",
+        DocumentStatus.Uploaded   => "status-uploaded",
+        DocumentStatus.Failed     => "status-failed",
+        _                         => "status-uploaded"
+    };
+
+    private static string GetStatusText(DocumentStatus status) => status switch
+    {
+        DocumentStatus.Indexed    => "Đã Index",
+        DocumentStatus.Processing => "Đang Index",
+        DocumentStatus.Uploaded   => "Đã tải lên",
+        DocumentStatus.Failed     => "Lỗi",
+        _                         => status.ToString()
+    };
+
+    private static string FormatFileSize(long? bytes)
+    {
+        if (!bytes.HasValue) return "--";
+        if (bytes.Value < 1024) return $"{bytes.Value} B";
+        var kb = bytes.Value / 1024d;
+        if (kb < 1024) return $"{kb:0.#} KB";
+        return $"{kb / 1024d:0.#} MB";
+    }
+}

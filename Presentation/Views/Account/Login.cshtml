@@ -1,0 +1,64 @@
+@model LoginViewModel
+
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<section class="auth-card" aria-labelledby="login-title">
+    <div class="text-center mb-4">
+        <div class="auth-logo" aria-hidden="true">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1; font-size: 1.75rem; color: #fff;">auto_awesome</span>
+        </div>
+        <h1 id="login-title" class="h3 fw-bold mb-2">Đăng nhập vào ChatAIWeb</h1>
+        <p class="text-muted mb-0">Chào mừng bạn trở lại, hệ thống học tập thông minh.</p>
+    </div>
+
+    <form asp-action="Login" method="post" class="d-grid gap-3">
+        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+        <input asp-for="ReturnUrl" type="hidden" />
+
+        <div>
+            <label asp-for="Email" class="form-label"></label>
+            <div class="input-with-icon">
+                <span class="input-symbol" aria-hidden="true">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">mail</span>
+                </span>
+                <input asp-for="Email" class="form-control" autocomplete="username" placeholder="Nhập địa chỉ email của bạn" />
+            </div>
+            <span asp-validation-for="Email" class="text-danger small"></span>
+        </div>
+
+        <div>
+            <div class="d-flex justify-content-between align-items-center">
+                <label asp-for="Password" class="form-label"></label>
+                <a class="small fw-semibold text-decoration-none" href="#" aria-label="Quên mật khẩu">Quên mật khẩu?</a>
+            </div>
+            <div class="input-with-icon">
+                <span class="input-symbol" aria-hidden="true">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">lock</span>
+                </span>
+                <input asp-for="Password" class="form-control" autocomplete="current-password" placeholder="Nhập mật khẩu" />
+            </div>
+            <span asp-validation-for="Password" class="text-danger small"></span>
+        </div>
+
+        <div class="form-check">
+            <input asp-for="RememberMe" class="form-check-input" />
+            <label asp-for="RememberMe" class="form-check-label"></label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+            Đăng nhập
+            <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 1.1rem;">arrow_forward</span>
+        </button>
+    </form>
+
+    <div class="border-top mt-4 pt-4 text-center text-muted">
+        Chưa có tài khoản? <span class="fw-semibold text-primary">Liên hệ quản trị viên</span>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

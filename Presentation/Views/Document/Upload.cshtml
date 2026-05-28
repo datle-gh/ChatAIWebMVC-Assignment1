@@ -1,0 +1,682 @@
+@model DocumentUploadViewModel
+
+@{
+    ViewData["Title"] = "Tải tài liệu lên";
+}
+
+<style>
+    /* ── Page header ── */
+    .upload-page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+    }
+
+    .upload-page-header .header-btn-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        padding-top: 4px;
+    }
+
+    /* ── Validation summary (model-level errors) ── */
+    .upload-validation-summary {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        color: #b91c1c;
+        font-size: 0.875rem;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .upload-validation-summary .vsum-icon {
+        flex-shrink: 0;
+        font-size: 1.1rem;
+        margin-top: 1px;
+    }
+
+    .upload-validation-summary ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* hide the default asp-validation-summary if empty */
+    [data-valmsg-summary].valid { display: none !important; }
+    [data-valmsg-summary]:empty { display: none !important; }
+
+    /* ── Field errors ── */
+    .field-error {
+        display: none;           /* hidden by default */
+        align-items: center;
+        gap: 5px;
+        color: #b91c1c;
+        font-size: 0.8125rem;
+        margin-top: 6px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Show only when it has text content (populated by ASP.NET validation) */
+    .field-error:not(:empty) {
+        display: flex;
+    }
+
+    /* Prepend icon via pseudo-element */
+    .field-error:not(:empty)::before {
+        content: 'error_outline';
+        font-family: 'Material Symbols Outlined';
+        font-size: 0.95rem;
+        flex-shrink: 0;
+        line-height: 1;
+    }
+
+    /* ── Section card ── */
+    .upload-section {
+        background: #fff;
+        border: 1px solid rgba(199, 196, 216, 0.3);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.05);
+        margin-bottom: 16px;
+    }
+
+    /* ── Select styling ── */
+    .upload-section .form-label {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #464555;
+        margin-bottom: 8px;
+        display: block;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .upload-section .form-select,
+    .upload-section .form-control {
+        border: 1.5px solid #c7c4d8;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.9375rem;
+        font-family: 'Inter', sans-serif;
+        color: #191c1e;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        width: 100%;
+    }
+
+    .upload-section .form-select:focus,
+    .upload-section .form-control:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        outline: none;
+    }
+
+    .upload-section .form-select.input-validation-error,
+    .upload-section .form-control.input-validation-error {
+        border-color: #ef4444;
+        background-color: #fff8f8;
+    }
+
+    /* ── Dropzone ── */
+    .upload-dropzone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed rgba(79, 70, 229, 0.3);
+        border-radius: 16px;
+        background: rgba(79, 70, 229, 0.03);
+        padding: 40px 24px;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        text-align: center;
+        margin-bottom: 8px;
+    }
+
+    .upload-dropzone:hover,
+    .upload-dropzone--active {
+        border-color: #4f46e5;
+        background: rgba(79, 70, 229, 0.07);
+    }
+
+    .upload-dropzone input[type="file"] {
+        display: none;
+    }
+
+    /* ── File chip tags ── */
+    .chip {
+        display: inline-block;
+        padding: 3px 10px;
+        background: rgba(79, 70, 229, 0.08);
+        color: #4f46e5;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.03em;
+    }
+
+    /* ── Thin progress bar ── */
+    .progress-thin {
+        height: 4px;
+        background: #eceef0;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+
+    .progress-thin > span {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        border-radius: 99px;
+        transition: width 0.4s ease;
+    }
+
+    /* ── Submit button ── */
+    .upload-submit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 24px;
+        background: #4f46e5;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+    }
+
+    .upload-submit-btn:hover:not(:disabled) {
+        background: #4338ca;
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+        transform: translateY(-1px);
+    }
+
+    .upload-submit-btn:disabled {
+        background: #c7c4d8;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    /* ── Info hint text ── */
+    .upload-hint {
+        font-size: 0.8125rem;
+        color: #777587;
+        font-family: 'Inter', sans-serif;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+</style>
+
+@* ── Page Header ── *@
+<div class="upload-page-header">
+    <div>
+        <h1 class="page-title">Thêm tài liệu mới</h1>
+        <p class="page-subtitle">Tải lên bài giảng, slide hoặc tài liệu PDF để AI phân tích và index vào kho tri thức.</p>
+    </div>
+    <div class="header-btn-group">
+        <a class="btn btn-outline-secondary" asp-action="Index">
+            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle;margin-right:4px">folder_open</span>
+            Kho tài liệu
+        </a>
+    </div>
+</div>
+
+@* ── Upload result banner (JS populated) ── *@
+<div class="alert d-none" role="alert" id="uploadResult"></div>
+
+<form asp-action="Upload"
+      method="post"
+      enctype="multipart/form-data"
+      class="row g-4 align-items-start"
+      id="uploadForm"
+      data-max-file-size-mb="@Model.MaxFileSizeMb"
+      data-max-files="@Model.MaxFilesPerBatch"
+      data-max-batch-size-mb="@Model.MaxBatchSizeMb">
+    @Html.AntiForgeryToken()
+    <input asp-for="UploadId" type="hidden" id="uploadId" />
+
+    @* ── Left column ── *@
+    <div class="col-xl-8">
+        <div class="d-grid gap-0">
+
+            @* Model-level validation summary with better styling *@
+            @{
+                var modelErrors = ViewData.ModelState
+                    .Where(kv => kv.Key == "" || kv.Key == "SubjectId" || kv.Key == "Files")
+                    .SelectMany(kv => kv.Value?.Errors ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.ModelBinding.ModelError>())
+                    .Select(e => e.ErrorMessage)
+                    .Where(m => !string.IsNullOrWhiteSpace(m))
+                    .ToList();
+            }
+            @if (modelErrors.Any())
+            {
+                <div class="upload-validation-summary mb-3" role="alert">
+                    <span class="material-symbols-outlined vsum-icon">error</span>
+                    <ul>
+                        @foreach (var err in modelErrors)
+                        {
+                            <li>@err</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @* ── Môn học ── *@
+            <div class="upload-section">
+                <label asp-for="SubjectId" class="form-label"></label>
+                <select asp-for="SubjectId" class="form-select">
+                    <option value="">-- Chọn môn học --</option>
+                    @foreach (var subject in Model.Subjects)
+                    {
+                        <option value="@subject.Id">@subject.DisplayName</option>
+                    }
+                </select>
+                <span asp-validation-for="SubjectId" class="field-error"></span>
+            </div>
+
+            @* ── Tiêu đề ── *@
+            <div class="upload-section">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" placeholder="Ví dụ: Chương 1 - Giới thiệu CSDL" />
+                <div class="upload-hint mt-2">
+                    <span class="material-symbols-outlined" style="font-size:0.95rem">info</span>
+                    Nếu chọn nhiều file, hệ thống sẽ dùng tên từng file làm tiêu đề tài liệu.
+                </div>
+                <span asp-validation-for="Title" class="field-error"></span>
+            </div>
+
+            @* ── Dropzone ── *@
+            <label class="upload-dropzone" id="dropzone" asp-for="Files">
+                <span class="upload-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined icon-fill" style="font-size: 3rem; color: #4f46e5;">cloud_upload</span>
+                </span>
+                <span class="h4 fw-bold mb-2 mt-2">Kéo thả file vào đây</span>
+                <span class="text-muted mb-3">hoặc click để chọn từ máy tính của bạn</span>
+                <span class="d-flex gap-2 justify-content-center flex-wrap mb-3" aria-hidden="true">
+                    <span class="chip">PDF</span>
+                    <span class="chip">DOCX</span>
+                    <span class="chip">PPTX</span>
+                </span>
+                <span class="upload-hint">
+                    <span class="material-symbols-outlined" style="font-size: 0.95rem;">info</span>
+                    Giới hạn: tối đa @Model.MaxFileSizeMb MB / file &nbsp;·&nbsp; @Model.MaxFilesPerBatch file / lần
+                </span>
+                <input asp-for="Files" type="file" accept=".pdf,.docx,.pptx" id="fileInput" data-upload-input aria-describedby="upload-help" multiple />
+            </label>
+            <span asp-validation-for="Files" class="field-error mb-2"></span>
+            <div id="clientError" class="field-error d-none mb-2">
+                <span class="material-symbols-outlined">error_outline</span>
+                <span id="clientErrorText"></span>
+            </div>
+            <div id="upload-help" class="visually-hidden">Chỉ hỗ trợ PDF, DOCX và PPTX.</div>
+
+            @* ── Danh sách file đã chọn + Submit ── *@
+            <div class="upload-section mt-0" style="margin-top:0">
+                <h2 class="h5 fw-bold mb-3" style="font-family:'Be Vietnam Pro',sans-serif">Tài liệu đã chọn</h2>
+                <div class="text-muted" id="uploadEmpty" style="font-size:0.9rem">Chưa chọn tài liệu nào.</div>
+                <div id="fileList" class="d-grid gap-2"></div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="upload-submit-btn" id="submitBtn" disabled>
+                        <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 1.1rem;">upload_file</span>
+                        Tải lên và Index
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Right sidebar ── *@
+    <aside class="col-xl-4">
+        <div class="d-grid gap-3">
+            <section class="upload-section">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="material-symbols-outlined icon-fill" style="color: #4f46e5; font-size: 1.3rem;">psychology</span>
+                    <h2 class="h5 fw-bold mb-0" style="font-family:'Be Vietnam Pro',sans-serif">Tiến trình xử lý AI</h2>
+                </div>
+                <p class="text-muted mb-3" style="font-size:0.875rem">Sau khi tải lên, hệ thống sẽ đọc nội dung, chia chunk, tạo embedding và đánh dấu tài liệu đã index.</p>
+                <div class="progress-thin mb-2" aria-hidden="true"><span id="overallProgressBar" style="width: 0%"></span></div>
+                <div class="upload-hint mb-3" id="progressStatus">Chưa có tài liệu đang xử lý trong phiên này.</div>
+                <div class="d-grid gap-2" id="progressList"></div>
+            </section>
+
+            <section class="upload-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 fw-bold mb-0" style="font-family:'Be Vietnam Pro',sans-serif">Kho tri thức</h2>
+                    <a class="small fw-semibold text-decoration-none" asp-action="Index" style="color:#4f46e5">Xem tất cả</a>
+                </div>
+                <div class="d-grid gap-3">
+                    <div class="d-flex gap-3 align-items-center">
+                        <span class="material-symbols-outlined icon-fill" style="color: #dc2626; font-size: 1.5rem;">picture_as_pdf</span>
+                        <div>
+                            <div class="fw-semibold" style="font-size:0.9rem">PDF bài giảng</div>
+                            <div class="text-muted" style="font-size:0.8125rem">Phù hợp cho giáo trình và tài liệu dài.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 align-items-center">
+                        <span class="material-symbols-outlined icon-fill" style="color: #2563eb; font-size: 1.5rem;">description</span>
+                        <div>
+                            <div class="fw-semibold" style="font-size:0.9rem">DOCX ghi chú</div>
+                            <div class="text-muted" style="font-size:0.8125rem">Dùng cho đề cương và bài tập.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 align-items-center">
+                        <span class="material-symbols-outlined icon-fill" style="color: #ea580c; font-size: 1.5rem;">slideshow</span>
+                        <div>
+                            <div class="fw-semibold" style="font-size:0.9rem">PPTX slide</div>
+                            <div class="text-muted" style="font-size:0.8125rem">Giữ lại thông tin slide khi trích xuất.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </aside>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const uploadEmpty = document.getElementById('uploadEmpty');
+        const submitBtn = document.getElementById('submitBtn');
+        const dropzone = document.getElementById('dropzone');
+        const clientError = document.getElementById('clientError');
+        const clientErrorText = document.getElementById('clientErrorText');
+        const uploadResult = document.getElementById('uploadResult');
+        const uploadIdInput = document.getElementById('uploadId');
+        const progressList = document.getElementById('progressList');
+        const progressStatus = document.getElementById('progressStatus');
+        const overallProgressBar = document.getElementById('overallProgressBar');
+
+        const maxFileSizeMb = Number(form.dataset.maxFileSizeMb);
+        const maxFiles = Number(form.dataset.maxFiles);
+        const maxBatchSizeMb = Number(form.dataset.maxBatchSizeMb);
+        const maxFileSizeBytes = maxFileSizeMb * 1024 * 1024;
+        const maxBatchSizeBytes = maxBatchSizeMb * 1024 * 1024;
+
+        let connection;
+        let isUploading = false;
+
+        function getFileIcon(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            if (ext === 'pdf')  return { icon: 'picture_as_pdf', color: '#dc2626', bg: '#fef2f2' };
+            if (ext === 'docx') return { icon: 'description',    color: '#2563eb', bg: '#eff6ff' };
+            if (ext === 'pptx') return { icon: 'slideshow',      color: '#ea580c', bg: '#fff7ed' };
+            return { icon: 'insert_drive_file', color: '#777587', bg: '#f2f4f6' };
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024)    return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function showClientError(message) {
+            clientErrorText.textContent = message;
+            clientError.classList.remove('d-none');
+        }
+
+        function clearClientError() {
+            clientErrorText.textContent = '';
+            clientError.classList.add('d-none');
+        }
+
+        function showResult(message, isSuccess) {
+            uploadResult.textContent = message;
+            uploadResult.className = `alert ${isSuccess ? 'alert-success' : 'alert-danger'}`;
+            uploadResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function clearResult() {
+            uploadResult.textContent = '';
+            uploadResult.className = 'alert d-none';
+        }
+
+        function setFiles(files) {
+            const dt = new DataTransfer();
+            Array.from(files).forEach(file => dt.items.add(file));
+            fileInput.files = dt.files;
+            renderFiles();
+        }
+
+        function appendFiles(files) {
+            const existing = Array.from(fileInput.files);
+            setFiles([...existing, ...Array.from(files)]);
+        }
+
+        function removeFile(indexToRemove) {
+            const files = Array.from(fileInput.files).filter((_, index) => index !== indexToRemove);
+            setFiles(files);
+        }
+
+        function validateSelectedFiles() {
+            const files = Array.from(fileInput.files);
+            if (files.length === 0) { clearClientError(); return true; }
+
+            if (files.length > maxFiles) {
+                showClientError(`Mỗi lần chỉ được tải tối đa ${maxFiles} tài liệu.`);
+                return false;
+            }
+
+            const oversized = files.find(file => file.size > maxFileSizeBytes);
+            if (oversized) {
+                showClientError(`"${oversized.name}" vượt quá giới hạn ${maxFileSizeMb} MB / file.`);
+                return false;
+            }
+
+            const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+            if (totalSize > maxBatchSizeBytes) {
+                showClientError(`Tổng dung lượng không được vượt quá ${maxBatchSizeMb} MB.`);
+                return false;
+            }
+
+            clearClientError();
+            return true;
+        }
+
+        function renderFiles() {
+            const files = Array.from(fileInput.files);
+            fileList.innerHTML = '';
+            uploadEmpty.classList.toggle('d-none', files.length > 0);
+            submitBtn.disabled = files.length === 0 || isUploading || !validateSelectedFiles();
+
+            files.forEach((file, index) => {
+                const { icon, color, bg } = getFileIcon(file.name);
+                const item = document.createElement('div');
+                item.className = 'd-flex align-items-center justify-content-between p-3 rounded-3 border';
+                item.style.background = '#fafafa';
+                item.innerHTML = `
+                    <div class="d-flex align-items-center gap-3 min-w-0">
+                        <span style="width:40px;height:40px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <span class="material-symbols-outlined icon-fill" style="color:${color};font-size:1.3rem;">${icon}</span>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="fw-semibold text-truncate" style="font-size:0.9rem">${escapeHtml(file.name)}</div>
+                            <div class="text-muted" style="font-size:0.8rem">${formatBytes(file.size)}</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-sm ms-2 flex-shrink-0" aria-label="Xóa file"></button>
+                `;
+                item.querySelector('button').addEventListener('click', () => removeFile(index));
+                fileList.appendChild(item);
+            });
+        }
+
+        function resetProgress() {
+            progressList.innerHTML = '';
+            overallProgressBar.style.width = '0%';
+            progressStatus.textContent = 'Đang chuẩn bị tải tài liệu...';
+        }
+
+        function ensureProgressItem(progress) {
+            const fileIndex = progress.fileIndex ?? progress.FileIndex;
+            const fileName  = progress.fileName  ?? progress.FileName;
+            let item = progressList.querySelector(`[data-file-index="${fileIndex}"]`);
+
+            if (!item) {
+                item = document.createElement('div');
+                item.className = 'p-3 rounded-3 border';
+                item.dataset.fileIndex = fileIndex;
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                        <div class="fw-semibold text-truncate" style="font-size:0.875rem" data-progress-name></div>
+                        <div class="text-muted flex-shrink-0" style="font-size:0.8rem" data-progress-percent>0%</div>
+                    </div>
+                    <div class="progress-thin mb-2"><span data-progress-bar style="width: 0%"></span></div>
+                    <div class="text-muted" style="font-size:0.8rem" data-progress-message>Đang chờ xử lý...</div>
+                `;
+                item.querySelector('[data-progress-name]').textContent = fileName;
+                progressList.appendChild(item);
+            }
+            return item;
+        }
+
+        function updateProgress(progress) {
+            const item = ensureProgressItem(progress);
+            const percent    = Math.max(0, Math.min(100, progress.percent    ?? progress.Percent    ?? 0));
+            const message    = progress.message    ?? progress.Message    ?? '';
+            const isFailed   = progress.isFailed   ?? progress.IsFailed;
+            const isCompleted = progress.isCompleted ?? progress.IsCompleted;
+
+            item.querySelector('[data-progress-bar]').style.width = `${percent}%`;
+            item.querySelector('[data-progress-percent]').textContent = `${percent}%`;
+            item.querySelector('[data-progress-message]').textContent = message;
+            item.classList.toggle('border-danger',  Boolean(isFailed));
+            item.classList.toggle('border-success', Boolean(isCompleted));
+
+            const allItems = Array.from(progressList.querySelectorAll('[data-file-index]'));
+            const totalPct = allItems.reduce((sum, el) => {
+                return sum + Number.parseInt(el.querySelector('[data-progress-percent]').textContent, 10);
+            }, 0);
+            overallProgressBar.style.width = `${allItems.length === 0 ? 0 : Math.round(totalPct / allItems.length)}%`;
+            progressStatus.textContent = message || 'Đang xử lý tài liệu...';
+        }
+
+        function createUploadId() {
+            return (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`).replaceAll('-', '');
+        }
+
+        async function startSignalR(uploadId) {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl('/hubs/upload-progress')
+                .withAutomaticReconnect()
+                .build();
+            connection.on('UploadProgressUpdated', updateProgress);
+            await connection.start();
+            await connection.invoke('JoinUpload', uploadId);
+        }
+
+        async function stopSignalR() {
+            if (connection) { await connection.stop(); connection = null; }
+        }
+
+        fileInput.addEventListener('change', renderFiles);
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('upload-dropzone--active');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('upload-dropzone--active');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('upload-dropzone--active');
+            appendFiles(e.dataTransfer.files);
+        });
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (isUploading) return;
+
+            clearResult();
+            if (!form.reportValidity() || !validateSelectedFiles()) {
+                renderFiles();
+                return;
+            }
+
+            const uploadId = createUploadId();
+            uploadIdInput.value = uploadId;
+            resetProgress();
+
+            isUploading = true;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>&nbsp;Đang tải lên...';
+
+            try {
+                await startSignalR(uploadId);
+                const response = await sendUploadRequest();
+                showResult(response.message || 'Đã xử lý tài liệu.', Boolean(response.succeeded));
+            } catch (error) {
+                showResult(error.message || 'Không thể tải tài liệu lên.', false);
+                progressStatus.textContent = 'Tải lên thất bại.';
+            } finally {
+                await stopSignalR();
+                isUploading = false;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true" style="font-size:1.1rem">upload_file</span> Tải lên và Index';
+                renderFiles();
+            }
+        });
+
+        function sendUploadRequest() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (!event.lengthComputable) {
+                        progressStatus.textContent = 'Đang gửi file lên server...';
+                        return;
+                    }
+                    const percent = Math.round((event.loaded / event.total) * 10);
+                    overallProgressBar.style.width = `${percent}%`;
+                    progressStatus.textContent = `Đang gửi file lên server (${Math.round((event.loaded / event.total) * 100)}%)...`;
+                });
+
+                xhr.onload = () => {
+                    let payload;
+                    try { payload = JSON.parse(xhr.responseText); }
+                    catch { payload = { message: 'Server trả về phản hồi không hợp lệ.' }; }
+
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(payload);
+                    } else {
+                        reject(new Error(payload.message || 'Không thể tải tài liệu lên.'));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error('Không thể kết nối tới server.'));
+                xhr.send(new FormData(form));
+            });
+        }
+    </script>
+}

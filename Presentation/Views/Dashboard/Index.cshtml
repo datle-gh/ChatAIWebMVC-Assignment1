@@ -1,0 +1,149 @@
+@model DashboardViewModel
+
+@{
+    ViewData["Title"] = "Bảng điều khiển";
+    Layout = "_Layout";
+}
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#3525cd",
+                    "primary-container": "#4f46e5",
+                    "primary-fixed": "#e2dfff",
+                    "primary-fixed-dim": "#c3c0ff",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#dad7ff",
+                    "secondary-container": "#d0e1fb",
+                    "on-secondary-container": "#54647a",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "tertiary-fixed": "#ffdbcc",
+                    "tertiary": "#7e3000",
+                    "surface-bright": "#f7f9fb",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container": "#eceef0",
+                    "surface-container-high": "#e6e8ea",
+                    "surface-tint": "#4d44e3",
+                    "background": "#f7f9fb",
+                    "on-background": "#191c1e",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#464555",
+                    "outline": "#777587",
+                    "outline-variant": "#c7c4d8",
+                }
+            }
+        }
+    };
+</script>
+
+<div class="bg-background min-h-screen p-6 md:p-10 space-y-8">
+
+    @* Welcome Section *@
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-on-surface mb-2" style="font-family:'Be Vietnam Pro',sans-serif">
+                Chào mừng trở lại, @Model.UserName
+            </h1>
+            <p class="text-on-surface-variant" style="font-family:'Inter',sans-serif">Sẵn sàng để tiếp tục hành trình học tập hôm nay?</p>
+        </div>
+        <a asp-controller="Dashboard" asp-action="SelectSubject"
+           class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md"
+           style="background:#4f46e5;font-family:'Inter',sans-serif;text-decoration:none">
+            <span class="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+            Bắt đầu hỏi chatbot
+        </a>
+    </div>
+
+    @* Stat Cards *@
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-surface-container-lowest rounded-2xl p-6 border border-surface-container-high flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06)">
+            <div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[24px]" style="font-variation-settings:'FILL' 1">library_books</span>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-on-surface-variant mb-1" style="font-family:'Inter',sans-serif">Số môn học</p>
+                <p class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">@Model.SubjectCount</p>
+            </div>
+        </div>
+
+        <div class="bg-surface-container-lowest rounded-2xl p-6 border border-surface-container-high flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06)">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background:#ffdbcc;color:#7e3000">
+                <span class="material-symbols-outlined text-[24px]" style="font-variation-settings:'FILL' 1">forum</span>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-on-surface-variant mb-1" style="font-family:'Inter',sans-serif">Số phiên chat</p>
+                <p class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">@Model.ChatSessionCount</p>
+            </div>
+        </div>
+
+        <div class="bg-surface-container-lowest rounded-2xl p-6 border border-surface-container-high flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06)">
+            <div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[24px]" style="font-variation-settings:'FILL' 1">description</span>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-on-surface-variant mb-1" style="font-family:'Inter',sans-serif">Tài liệu đã index</p>
+                <p class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">@Model.IndexedDocumentCount</p>
+            </div>
+        </div>
+    </div>
+
+    @* Recent Courses *@
+    <section>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">Môn học gần đây</h2>
+            <a asp-controller="Dashboard" asp-action="SelectSubject"
+               class="text-sm font-medium hover:underline" style="color:#4f46e5;font-family:'Inter',sans-serif">Xem tất cả</a>
+        </div>
+
+        @if (!Model.RecentCourses.Any())
+        {
+            <div class="bg-surface-container-lowest rounded-2xl p-10 text-center border border-surface-container-high">
+                <span class="material-symbols-outlined text-on-surface-variant mb-3 block" style="font-size:48px">school</span>
+                <p class="text-on-surface-variant" style="font-family:'Inter',sans-serif">Bạn chưa có môn học nào. Hãy liên hệ giảng viên để được thêm vào môn học.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                @foreach (var course in Model.RecentCourses)
+                {
+                    <a asp-controller="Chat" asp-action="Index" asp-route-subjectId="@course.Id"
+                       class="bg-surface-container-lowest rounded-2xl p-6 border border-surface-container-high hover:border-primary-fixed-dim transition-all duration-200 group cursor-pointer flex flex-col"
+                       style="box-shadow:0 4px 12px rgba(79,70,229,0.04);text-decoration:none">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center" style="color:#4f46e5">
+                                <span class="material-symbols-outlined">data_object</span>
+                            </div>
+                            <span class="text-xs font-medium text-on-surface-variant bg-surface-container px-2 py-1 rounded-lg" style="font-family:'Inter',sans-serif">
+                                @course.SubjectCode
+                            </span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-on-surface mb-2 group-hover:text-primary transition-colors" style="font-family:'Be Vietnam Pro',sans-serif">
+                            @course.SubjectName
+                        </h3>
+                        <p class="text-sm text-on-surface-variant mb-5 flex-1" style="font-family:'Inter',sans-serif">
+                            @(string.IsNullOrWhiteSpace(course.Description) ? $"{course.IndexedDocumentCount} tài liệu đã index" : course.Description)
+                        </p>
+                        <div class="mt-auto">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-medium text-on-surface-variant" style="font-family:'Inter',sans-serif">Tiến độ</span>
+                                <span class="text-xs font-semibold" style="color:#4f46e5;font-family:'Inter',sans-serif">@course.ProgressPercent%</span>
+                            </div>
+                            <div class="w-full bg-surface-container-high rounded-full" style="height:6px">
+                                <div class="rounded-full transition-all duration-500" style="width:@(course.ProgressPercent)%;height:6px;background:#4f46e5"></div>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </section>
+</div>

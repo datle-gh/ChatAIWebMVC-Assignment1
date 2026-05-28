@@ -1,0 +1,281 @@
+@model AdminUserIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#3525cd",
+                    "primary-container": "#4f46e5",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container": "#eceef0",
+                    "surface-container-high": "#e6e8ea",
+                    "background": "#f7f9fb",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#464555",
+                    "outline-variant": "#c7c4d8",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                }
+            }
+        }
+    };
+</script>
+
+<style>
+    .user-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-family: 'Inter', sans-serif;
+    }
+    .user-table thead th {
+        background: #f2f4f6;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #464555;
+        padding: 11px 16px;
+        border-top: 1px solid #e6e8ea;
+        border-bottom: 1px solid #e6e8ea;
+        white-space: nowrap;
+    }
+    .user-table thead th:first-child { border-left: 1px solid #e6e8ea; border-radius: 12px 0 0 0; }
+    .user-table thead th:last-child  { border-right: 1px solid #e6e8ea; border-radius: 0 12px 0 0; }
+    .user-table tbody td {
+        padding: 13px 16px;
+        border-bottom: 1px solid #eceef0;
+        vertical-align: middle;
+        font-size: 14px;
+        color: #191c1e;
+    }
+    .user-table tbody td:first-child { border-left: 1px solid #eceef0; }
+    .user-table tbody td:last-child  { border-right: 1px solid #eceef0; }
+    .user-table tbody tr:last-child td { border-bottom: 1px solid #e6e8ea; }
+    .user-table tbody tr:last-child td:first-child { border-radius: 0 0 0 12px; }
+    .user-table tbody tr:last-child td:last-child  { border-radius: 0 0 12px 0; }
+    .user-table tbody tr:hover td { background: #f7f9fb; }
+    .role-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+    }
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background 0.15s, color 0.15s;
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+
+<div class="bg-background min-h-screen p-6 md:p-8 space-y-6">
+
+    @* Page Header *@
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                Quản lý người dùng
+            </h1>
+            <p class="text-on-surface-variant text-sm mt-1" style="font-family:'Inter',sans-serif">
+                Tạo tài khoản và phân quyền cho người dùng hệ thống.
+            </p>
+        </div>
+        <a asp-action="Create"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all active:scale-95 shadow-sm hover:shadow-md flex-shrink-0"
+           style="background:#4f46e5;font-family:'Inter',sans-serif;text-decoration:none">
+            <span class="material-symbols-outlined text-[18px]">person_add</span>
+            Tạo tài khoản
+        </a>
+    </div>
+
+    @* Success Alert *@
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl border text-sm"
+             style="background:#e2dfff;border-color:#c3c0ff;color:#3525cd;font-family:'Inter',sans-serif">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            @successMessage
+        </div>
+    }
+
+    @* Stats Bar *@
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        @{
+            var totalUsers = Model.Users.Count;
+            var studentCount = Model.Users.Count(u => u.Role == "Student");
+            var teacherCount = Model.Users.Count(u => u.Role == "Teacher");
+            var adminCount = Model.Users.Count(u => u.Role == "Admin");
+        }
+        <div class="bg-surface-container-lowest rounded-xl px-4 py-3 flex items-center gap-3"
+             style="border:1px solid rgba(199,196,216,0.3);box-shadow:0 2px 8px rgba(79,70,229,0.05)">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(79,70,229,0.1)">
+                <span class="material-symbols-outlined text-[18px]" style="color:#4f46e5">group</span>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">@totalUsers</div>
+                <div class="text-xs text-on-surface-variant" style="font-family:'Inter',sans-serif">Tổng số</div>
+            </div>
+        </div>
+        <div class="bg-surface-container-lowest rounded-xl px-4 py-3 flex items-center gap-3"
+             style="border:1px solid rgba(199,196,216,0.3);box-shadow:0 2px 8px rgba(79,70,229,0.05)">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(5,150,105,0.1)">
+                <span class="material-symbols-outlined text-[18px]" style="color:#059669">school</span>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">@studentCount</div>
+                <div class="text-xs text-on-surface-variant" style="font-family:'Inter',sans-serif">Sinh viên</div>
+            </div>
+        </div>
+        <div class="bg-surface-container-lowest rounded-xl px-4 py-3 flex items-center gap-3"
+             style="border:1px solid rgba(199,196,216,0.3);box-shadow:0 2px 8px rgba(79,70,229,0.05)">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(8,145,178,0.1)">
+                <span class="material-symbols-outlined text-[18px]" style="color:#0891b2">supervisor_account</span>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">@teacherCount</div>
+                <div class="text-xs text-on-surface-variant" style="font-family:'Inter',sans-serif">Giảng viên</div>
+            </div>
+        </div>
+        <div class="bg-surface-container-lowest rounded-xl px-4 py-3 flex items-center gap-3"
+             style="border:1px solid rgba(199,196,216,0.3);box-shadow:0 2px 8px rgba(79,70,229,0.05)">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(124,58,237,0.1)">
+                <span class="material-symbols-outlined text-[18px]" style="color:#7c3aed">admin_panel_settings</span>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">@adminCount</div>
+                <div class="text-xs text-on-surface-variant" style="font-family:'Inter',sans-serif">Quản trị</div>
+            </div>
+        </div>
+    </div>
+
+    @* User Table *@
+    <div class="overflow-x-auto">
+        <table class="user-table">
+            <colgroup>
+                <col style="width:25%">
+                <col style="width:27%">
+                <col style="width:12%">
+                <col style="width:12%">
+                <col style="width:14%">
+                <col style="width:10%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Cập nhật</th>
+                    <th class="text-right">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Users)
+                {
+                    var roleColor = user.Role switch {
+                        "Admin"   => ("rgba(124,58,237,0.12)", "#7c3aed"),
+                        "Teacher" => ("rgba(8,145,178,0.12)", "#0891b2"),
+                        "Student" => ("rgba(5,150,105,0.12)", "#059669"),
+                        _         => ("rgba(119,117,135,0.12)", "#777587")
+                    };
+                    var roleLabel = user.Role switch {
+                        "Admin"   => "Admin",
+                        "Teacher" => "Giảng viên",
+                        "Student" => "Sinh viên",
+                        _ => user.Role
+                    };
+                    var nameLetter = string.IsNullOrWhiteSpace(user.FullName) ? "?" : user.FullName.Trim().Split(' ').Last()[0].ToString().ToUpper();
+                    var avatarBg = user.Role switch {
+                        "Admin"   => "#7c3aed",
+                        "Teacher" => "#0891b2",
+                        _         => "#059669"
+                    };
+
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                                     style="background:@avatarBg;font-family:'Be Vietnam Pro',sans-serif">
+                                    @nameLetter
+                                </div>
+                                <div>
+                                    <div class="font-medium text-on-surface text-sm">@user.FullName</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="text-on-surface-variant text-sm">@user.Email</span>
+                        </td>
+                        <td>
+                            <span class="role-badge" style="background:@roleColor.Item1;color:@roleColor.Item2">
+                                @roleLabel
+                            </span>
+                        </td>
+                        <td>
+                            @if (user.IsActive)
+                            {
+                                <span class="role-badge" style="background:rgba(5,150,105,0.1);color:#059669">
+                                    Hoạt động
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="role-badge" style="background:rgba(119,117,135,0.1);color:#777587">
+                                    Đã khoá
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <span class="text-on-surface-variant text-sm">
+                                @((user.UpdatedAt ?? user.CreatedAt).ToLocalTime().ToString("dd/MM/yyyy HH:mm"))
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center justify-end gap-2">
+                                <a asp-action="Edit" asp-route-id="@user.Id"
+                                   class="action-btn"
+                                   style="background:rgba(79,70,229,0.08);color:#4f46e5"
+                                   title="Chỉnh sửa">
+                                    <span class="material-symbols-outlined text-[15px]">edit</span>
+                                    Sửa
+                                </a>
+                                <a asp-action="ResetPassword" asp-route-id="@user.Id"
+                                   class="action-btn"
+                                   style="background:rgba(119,117,135,0.08);color:#464555"
+                                   title="Đặt lại mật khẩu">
+                                    <span class="material-symbols-outlined text-[15px]">lock_reset</span>
+                                    Mật khẩu
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Users.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-12 text-on-surface-variant text-sm">
+                            Chưa có tài khoản nào.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

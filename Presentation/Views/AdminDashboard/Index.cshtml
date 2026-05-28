@@ -1,0 +1,372 @@
+@model Presentation.Models.AdminDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard Quản trị";
+}
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#3525cd",
+                    "primary-container": "#4f46e5",
+                    "primary-fixed": "#e2dfff",
+                    "on-primary-container": "#dad7ff",
+                    "secondary-container": "#d0e1fb",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container": "#eceef0",
+                    "surface-container-high": "#e6e8ea",
+                    "background": "#f7f9fb",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#464555",
+                    "outline-variant": "#c7c4d8",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                }
+            }
+        }
+    };
+</script>
+
+<style>
+    .stat-card-tw {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card-tw:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(79,70,229,0.14) !important;
+    }
+    .tw-table th {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #464555;
+        background: #f2f4f6;
+        padding: 10px 16px;
+        border-bottom: 1px solid #e6e8ea;
+    }
+    .tw-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #eceef0;
+        vertical-align: middle;
+    }
+    .tw-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .tw-table tbody tr:hover {
+        background: #f7f9fb;
+    }
+</style>
+
+<div class="bg-background min-h-screen p-6 md:p-8 space-y-6">
+
+    @* Page Header *@
+    <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+            Dashboard Quản trị
+        </h1>
+        <p class="text-on-surface-variant text-sm mt-1" style="font-family:'Inter',sans-serif">
+            Theo dõi tình trạng tài liệu và môn học trong thư viện AI.
+        </p>
+    </div>
+
+    @* Stats Row 1: Users & Subject & Chat *@
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        @* Sinh viên *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:rgba(79,70,229,0.1)">
+                <span class="material-symbols-outlined text-2xl" style="color:#4f46e5">school</span>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-0.5"
+                     style="font-family:'Inter',sans-serif">Tài khoản Sinh viên</div>
+                <div class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                    @Model.StudentCount
+                </div>
+            </div>
+        </div>
+
+        @* Giảng viên *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:rgba(5,150,105,0.1)">
+                <span class="material-symbols-outlined text-2xl" style="color:#059669">supervisor_account</span>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-0.5"
+                     style="font-family:'Inter',sans-serif">Tài khoản Giảng viên</div>
+                <div class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                    @Model.TeacherCount
+                </div>
+            </div>
+        </div>
+
+        @* Môn học *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:rgba(8,145,178,0.1)">
+                <span class="material-symbols-outlined text-2xl" style="color:#0891b2">menu_book</span>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-0.5"
+                     style="font-family:'Inter',sans-serif">Môn học</div>
+                <div class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                    @Model.SubjectCount
+                </div>
+            </div>
+        </div>
+
+        @* Cuộc trò chuyện *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:rgba(124,58,237,0.1)">
+                <span class="material-symbols-outlined text-2xl" style="color:#7c3aed">forum</span>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-0.5"
+                     style="font-family:'Inter',sans-serif">Cuộc trò chuyện</div>
+                <div class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                    @Model.ChatSessionCount
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Stats Row 2: Documents *@
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        @* Tài liệu đã tải lên *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                     style="background:rgba(8,145,178,0.1)">
+                    <span class="material-symbols-outlined text-xl" style="color:#0891b2">description</span>
+                </div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+                     style="font-family:'Inter',sans-serif">Tài liệu đã tải lên</div>
+            </div>
+            <div class="text-2xl font-bold text-on-surface mb-1" style="font-family:'Be Vietnam Pro',sans-serif">
+                @Model.TotalDocumentCount
+            </div>
+            <div class="text-xs text-on-surface-variant" style="font-family:'Inter',sans-serif">
+                PDF: @Model.PdfCount &nbsp;|&nbsp; DOCX: @Model.DocxCount &nbsp;|&nbsp; PPTX: @Model.PptxCount
+            </div>
+        </div>
+
+        @* Tài liệu đã Index *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:rgba(5,150,105,0.1)">
+                <span class="material-symbols-outlined text-2xl" style="color:#059669">task_alt</span>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-0.5"
+                     style="font-family:'Inter',sans-serif">Tài liệu đã Index</div>
+                <div class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                    @Model.IndexedDocumentCount
+                </div>
+            </div>
+        </div>
+
+        @* Đánh giá RAG *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:rgba(111,66,193,0.1)">
+                <span class="material-symbols-outlined text-2xl" style="color:#6f42c1">quiz</span>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-0.5"
+                     style="font-family:'Inter',sans-serif">Đánh giá RAG (Câu hỏi)</div>
+                <div class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                    @Model.EvaluationQuestionCount
+                </div>
+            </div>
+        </div>
+
+        @* Benchmark *@
+        <div class="stat-card-tw bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:rgba(232,62,140,0.1)">
+                <span class="material-symbols-outlined text-2xl" style="color:#e83e8c">speed</span>
+            </div>
+            <div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-0.5"
+                     style="font-family:'Inter',sans-serif">Lượt chạy Benchmark</div>
+                <div class="text-2xl font-bold text-on-surface" style="font-family:'Be Vietnam Pro',sans-serif">
+                    @Model.BenchmarkRunCount
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Data Tables *@
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        @* Recent Documents *@
+        <div class="bg-surface-container-lowest rounded-2xl overflow-hidden"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="px-5 py-4 border-b border-outline-variant/30 flex items-center justify-between">
+                <h2 class="font-semibold text-on-surface text-base" style="font-family:'Be Vietnam Pro',sans-serif">
+                    Tài liệu gần đây
+                </h2>
+                <a asp-controller="Document" asp-action="Index"
+                   class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                   style="color:#4f46e5;background:rgba(79,70,229,0.08);text-decoration:none;font-family:'Inter',sans-serif">
+                    Xem tất cả
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full tw-table" style="font-family:'Inter',sans-serif">
+                    <thead>
+                        <tr>
+                            <th>Tên tài liệu</th>
+                            <th>Môn học</th>
+                            <th class="text-center">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentDocuments.Any())
+                        {
+                            foreach (var doc in Model.RecentDocuments)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-base flex-shrink-0" style="color:#777587">description</span>
+                                            <div>
+                                                <div class="text-sm font-medium text-on-surface truncate" style="max-width:160px" title="@doc.Title">
+                                                    @doc.Title
+                                                </div>
+                                                <div class="text-xs text-on-surface-variant mt-0.5">
+                                                    @doc.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-sm text-on-surface-variant">@doc.SubjectName</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (doc.Status == "Indexed")
+                                        {
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                                  style="background:rgba(5,150,105,0.1);color:#059669">Đã Index</span>
+                                        }
+                                        else if (doc.Status == "Processing")
+                                        {
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                                  style="background:rgba(217,119,6,0.1);color:#d97706">Đang xử lý</span>
+                                        }
+                                        else if (doc.Status == "Failed")
+                                        {
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                                  style="background:rgba(186,26,26,0.1);color:#ba1a1a">Lỗi</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                                  style="background:rgba(119,117,135,0.1);color:#777587">@doc.Status</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center py-10 text-on-surface-variant text-sm">
+                                    Chưa có tài liệu nào.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @* Recent Benchmarks *@
+        <div class="bg-surface-container-lowest rounded-2xl overflow-hidden"
+             style="box-shadow:0 4px 12px rgba(79,70,229,0.06);border:1px solid rgba(199,196,216,0.25)">
+            <div class="px-5 py-4 border-b border-outline-variant/30 flex items-center justify-between">
+                <h2 class="font-semibold text-on-surface text-base" style="font-family:'Be Vietnam Pro',sans-serif">
+                    Đánh giá RAG gần đây
+                </h2>
+                <a asp-controller="RagasEvaluation" asp-action="Index"
+                   class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                   style="color:#4f46e5;background:rgba(79,70,229,0.08);text-decoration:none;font-family:'Inter',sans-serif">
+                    Xem tất cả
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full tw-table" style="font-family:'Inter',sans-serif">
+                    <thead>
+                        <tr>
+                            <th>Môn học</th>
+                            <th>Mô hình LLM</th>
+                            <th class="text-center">Điểm số</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentBenchmarks.Any())
+                        {
+                            foreach (var benchmark in Model.RecentBenchmarks)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="text-sm font-medium text-on-surface">@benchmark.SubjectName</div>
+                                        <div class="text-xs text-on-surface-variant mt-0.5">
+                                            @benchmark.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="inline-block px-2 py-0.5 rounded text-xs font-medium border"
+                                              style="font-family:'Inter',sans-serif;background:#f2f4f6;color:#464555;border-color:#e6e8ea">
+                                            @benchmark.LlmModel
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (benchmark.OverallScore.HasValue)
+                                        {
+                                            var scoreColor = benchmark.OverallScore >= 0.8m ? "#059669" : (benchmark.OverallScore >= 0.5m ? "#d97706" : "#ba1a1a");
+                                            <span class="text-sm font-bold" style="color:@scoreColor">
+                                                @benchmark.OverallScore.Value.ToString("P1")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-sm text-on-surface-variant">N/A</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center py-10 text-on-surface-variant text-sm">
+                                    Chưa có kết quả đánh giá nào.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

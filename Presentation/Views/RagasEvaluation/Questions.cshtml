@@ -1,0 +1,199 @@
+@model Presentation.Models.RagasQuestionsViewModel
+
+@{
+    ViewData["Title"] = "Quản lý câu hỏi mẫu - " + Model.SubjectName;
+}
+
+<div class="container-fluid px-4 py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Đánh giá RAG</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.SubjectName</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800 fw-bold">Bộ câu hỏi đánh giá</h1>
+            <p class="text-muted mb-0">Ground-truth dataset cho môn học: <strong class="text-primary">@Model.SubjectName</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            @if (!Model.Questions.Any())
+            {
+                <form asp-action="SeedQuestions" method="post" class="d-inline">
+                    <input type="hidden" name="subjectId" value="@Model.SubjectId" />
+                    <button type="submit" class="btn btn-outline-success rounded-pill px-4 d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined fs-5">auto_awesome</span> Tạo dữ liệu mẫu
+                    </button>
+                </form>
+            }
+            <button type="button" class="btn btn-primary rounded-pill px-4 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+                <span class="material-symbols-outlined fs-5">add</span> Thêm câu hỏi
+            </button>
+            <button type="button" id="btnRunEvaluation" class="btn btn-warning rounded-pill px-4 d-flex align-items-center gap-2" @(Model.Questions.Any() ? "" : "disabled")>
+                <span class="material-symbols-outlined fs-5">play_arrow</span> Chạy đánh giá (Benchmark)
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="m-0 font-weight-bold text-primary">Embedding models benchmark</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach (var embeddingModel in Model.EmbeddingModels)
+                {
+                    <div class="col-md-6 col-xl-4">
+                        <label class="border rounded-3 p-3 w-100 h-100 d-flex gap-2 align-items-start">
+                            <input class="form-check-input benchmark-model" type="checkbox" value="@embeddingModel.Key" checked="@embeddingModel.IsSelected" />
+                            <span>
+                                <span class="fw-semibold d-block">@embeddingModel.Key</span>
+                                <span class="text-muted small">@embeddingModel.Provider - @embeddingModel.Model</span>
+                            </span>
+                        </label>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert for Run Result -->
+    <div id="evaluationAlert" class="alert alert-info d-none alert-dismissible fade show shadow-sm border-0" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span id="evaluationAlertMessage">Đang chạy đánh giá LLM-as-a-judge... Vui lòng không đóng trang này (có thể mất 1-2 phút).</span>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-0 px-4 py-3" style="width: 35%">Câu hỏi</th>
+                            <th class="border-0 py-3" style="width: 45%">Câu trả lời chuẩn (Ground Truth)</th>
+                            <th class="border-0 py-3 text-center" style="width: 10%">Ngày tạo</th>
+                            <th class="border-0 py-3 text-end px-4" style="width: 10%">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Questions.Any())
+                        {
+                            foreach (var q in Model.Questions)
+                            {
+                                <tr>
+                                    <td class="px-4 py-3 fw-medium text-gray-800">@q.Question</td>
+                                    <td class="py-3 text-muted small">@q.GroundTruthAnswer</td>
+                                    <td class="py-3 text-center text-muted small">@q.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                    <td class="py-3 text-end px-4">
+                                        <form asp-action="DeleteQuestion" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa câu hỏi này?');">
+                                            <input type="hidden" name="id" value="@q.Id" />
+                                            <input type="hidden" name="subjectId" value="@Model.SubjectId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon rounded-circle" title="Xóa">
+                                                <span class="material-symbols-outlined fs-6">delete</span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <div class="text-muted mb-3">Chưa có câu hỏi nào cho môn học này.</div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Question -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1" aria-labelledby="addQuestionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <form asp-action="AddQuestion" method="post">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold" id="addQuestionModalLabel">Thêm câu hỏi mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="SubjectId" value="@Model.SubjectId" />
+                    
+                    <div class="mb-3">
+                        <label for="Question" class="form-label fw-semibold">Câu hỏi</label>
+                        <input type="text" class="form-control" id="Question" name="Question" required placeholder="Nhập câu hỏi sinh viên có thể hỏi...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="GroundTruthAnswer" class="form-label fw-semibold">Câu trả lời chuẩn (Ground Truth)</label>
+                        <textarea class="form-control" id="GroundTruthAnswer" name="GroundTruthAnswer" rows="4" required placeholder="Nhập câu trả lời chính xác, đầy đủ làm căn cứ để AI chấm điểm..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu câu hỏi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#btnRunEvaluation').click(function() {
+                var btn = $(this);
+                var alertBox = $('#evaluationAlert');
+                var alertMsg = $('#evaluationAlertMessage');
+                var subjectId = @Model.SubjectId;
+                var embeddingModels = $('.benchmark-model:checked').map(function() { return $(this).val(); }).get();
+                if (embeddingModels.length === 0) {
+                    alertBox.removeClass('d-none alert-info alert-success').addClass('alert-danger');
+                    alertBox.find('.spinner-border').addClass('d-none');
+                    alertMsg.text('Vui lòng chọn ít nhất một embedding model để benchmark.');
+                    return;
+                }
+                
+                btn.prop('disabled', true);
+                alertBox.removeClass('d-none alert-danger').addClass('alert-info');
+                alertBox.find('.spinner-border').removeClass('d-none');
+                alertMsg.text('Đang chạy đánh giá RAG (Retriever + Generator)... Quá trình này dùng LLM-as-a-judge nên có thể mất vài phút. Vui lòng không đóng trang này.');
+                
+                $.ajax({
+                    url: '@Url.Action("RunEvaluation", "RagasEvaluation")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ subjectId: subjectId, embeddingModels: embeddingModels }),
+                    success: function(response) {
+                        if (response.success) {
+                            alertBox.removeClass('alert-info').addClass('alert-success');
+                            alertBox.find('.spinner-border').addClass('d-none');
+                            alertMsg.html('Đánh giá hoàn tất! Đang chuyển hướng đến kết quả...');
+                            setTimeout(function() {
+                                window.location.href = '@Url.Action("Details", "RagasEvaluation")?subjectId=' + subjectId;
+                            }, 1500);
+                        } else {
+                            alertBox.removeClass('alert-info').addClass('alert-danger');
+                            alertBox.find('.spinner-border').addClass('d-none');
+                            alertMsg.text('Lỗi: ' + response.message);
+                            btn.prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        alertBox.removeClass('alert-info').addClass('alert-danger');
+                        alertBox.find('.spinner-border').addClass('d-none');
+                        alertMsg.text('Có lỗi xảy ra khi gọi API đánh giá. Vui lòng kiểm tra lại kết nối hoặc log hệ thống.');
+                        btn.prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+}

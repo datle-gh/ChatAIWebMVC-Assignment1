@@ -1,0 +1,373 @@
+@model ChatPageViewModel
+
+@{
+    ViewData["Title"] = "Hỏi đáp Chatbot AI";
+    ViewData["MainClass"] = "chat-page-main";
+}
+
+<div class="chat-layout">
+    @* ── Left: Session sidebar ── *@
+    <aside class="chat-sessions" aria-label="Phiên hội thoại gần đây">
+        <div class="p-3 border-bottom">
+            <a class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+               asp-action="Index" asp-route-subjectId="@Model.Ask.SubjectId">
+                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 1.1rem;">add</span>
+                Cuộc trò chuyện mới
+            </a>
+        </div>
+        <div class="chat-sessions-list">
+            <div class="small text-muted text-uppercase fw-bold px-2 py-2">Gần đây</div>
+            @if (Model.RecentSessions.Count == 0)
+            {
+                <div class="text-muted px-2" style="font-size:0.875rem">Chưa có lịch sử hội thoại.</div>
+            }
+            else
+            {
+                @foreach (var session in Model.RecentSessions.Take(10))
+                {
+                    <a class="chat-session-link @(Model.ChatSessionId == session.Id ? "active" : "")"
+                       asp-action="History"
+                       asp-route-sessionId="@session.Id">
+                        <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 1rem; opacity: 0.7;">
+                            @(Model.ChatSessionId == session.Id ? "chat_bubble" : "chat_bubble_outline")
+                        </span>
+                        <span class="min-w-0">
+                            <span class="d-block text-truncate fw-semibold" style="font-size:0.875rem">@session.Title</span>
+                            <span class="d-block small text-muted">
+                                @((session.UpdatedAt ?? session.CreatedAt).ToLocalTime().ToString("dd/MM/yyyy HH:mm"))
+                            </span>
+                        </span>
+                    </a>
+                }
+            }
+        </div>
+    </aside>
+
+    @* ── Right: Chat panel ── *@
+    <section class="chat-panel" aria-label="Hỏi đáp tài liệu">
+        <form id="chatForm" asp-action="Ask" method="post"
+              style="display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;">
+            @Html.AntiForgeryToken()
+
+            @* Context header *@
+            <div class="chat-context-header">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="chat-avatar" aria-hidden="true"
+                          style="background: linear-gradient(135deg, var(--primary-container), var(--primary)); width: 40px; height: 40px;">
+                        <span class="material-symbols-outlined icon-fill" style="color: #fff; font-size: 1.3rem;">psychology</span>
+                    </span>
+                    <div>
+                        <h1 class="h5 fw-bold mb-0" style="font-family:'Be Vietnam Pro',sans-serif">Gia sư AI</h1>
+                        <div class="small text-muted">Đặt câu hỏi theo tài liệu đã index</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label asp-for="Ask.SubjectId" class="visually-hidden"></label>
+                    @if (Model.Subjects.Count > 0)
+                    {
+                        <select asp-for="Ask.SubjectId" class="form-select" style="width: auto; min-width: 160px; min-height: 38px; font-size: 0.875rem;">
+                            <option value="0">-- Chọn môn học --</option>
+                            @foreach (var subject in Model.Subjects)
+                            {
+                                <option value="@subject.Id" selected="@(Model.Ask.SubjectId == subject.Id ? "selected" : null)">@subject.DisplayName</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <input asp-for="Ask.SubjectId" class="form-control" min="1" style="width: 110px; min-height: 38px;" placeholder="Mã môn học" />
+                    }
+                </div>
+            </div>
+
+            <span asp-validation-for="Ask.SubjectId" class="text-danger small px-4 pt-1" style="flex-shrink:0"></span>
+            <input asp-for="Ask.ChatSessionId" type="hidden" id="chatSessionId" />
+
+            @* Message list — scrollable area *@
+            <div id="chatMessages" class="chat-message-list" aria-live="polite">
+                @if (Model.Messages.Count == 0)
+                {
+                    <div class="text-center text-muted py-5" id="emptyChatState">
+                        <span class="material-symbols-outlined icon-fill"
+                              style="font-size: 3.5rem; color: var(--primary-container); opacity: 0.5;" aria-hidden="true">psychology</span>
+                        <h2 class="h4 fw-bold text-dark mt-3" style="font-family:'Be Vietnam Pro',sans-serif">Bạn muốn học gì hôm nay?</h2>
+                        <p class="mb-0">Chọn môn học và đặt câu hỏi để bắt đầu một phiên hỏi đáp mới.</p>
+                    </div>
+                }
+                else
+                {
+                    foreach (var message in Model.Messages)
+                    {
+                        <article class="chat-message @(message.Role == "User" ? "chat-message-user" : "chat-message-assistant")">
+                            @if (message.Role != "User")
+                            {
+                                <span class="chat-avatar" aria-hidden="true">
+                                    <span class="material-symbols-outlined icon-fill" style="color: var(--primary-container); font-size: 1.15rem;">psychology</span>
+                                </span>
+                            }
+                            <div class="chat-bubble">
+                                <div class="small @(message.Role == "User" ? "text-white-50" : "text-muted") mb-2">
+                                    @(message.Role == "User" ? "Bạn" : "Chatbot") · @message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                                <div class="chat-message-content">@message.Content</div>
+
+                                @if (message.Role == "Assistant" && message.Citations.Count > 0)
+                                {
+                                    <div class="mt-3">
+                                        <div class="small text-uppercase fw-bold text-muted mb-2" style="letter-spacing:0.05em">
+                                            <span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:middle;margin-right:4px">auto_stories</span>
+                                            Nguồn tham khảo
+                                        </div>
+                                        <div class="citation-list">
+                                            @foreach (var citation in message.Citations)
+                                            {
+                                                <div class="citation-card">
+                                                    <div class="citation-card-header">
+                                                        <span class="citation-index-badge">@citation.CitationIndex</span>
+                                                        <span class="citation-card-title">@citation.DocumentTitle</span>
+                                                    </div>
+                                                    <div class="citation-card-meta">
+                                                        @{
+                                                            var metaParts = new List<string>();
+                                                            if (citation.PageNumber.HasValue) metaParts.Add($"Trang {citation.PageNumber.Value}");
+                                                            if (citation.SlideNumber.HasValue) metaParts.Add($"Slide {citation.SlideNumber.Value}");
+                                                            if (citation.ChunkIndex.HasValue) metaParts.Add($"Chunk {citation.ChunkIndex.Value}");
+                                                        }
+                                                        @string.Join(" · ", metaParts)
+                                                    </div>
+                                                    @if (!string.IsNullOrWhiteSpace(citation.Snippet))
+                                                    {
+                                                        <p class="citation-card-snippet">@citation.Snippet</p>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </article>
+                    }
+                }
+            </div>
+
+            @* Composer — fixed at bottom *@
+            <div class="chat-composer" style="flex-shrink:0">
+                <div class="chat-composer-box">
+                    <label asp-for="Ask.Question" class="visually-hidden"></label>
+                    <textarea asp-for="Ask.Question"
+                              class="form-control"
+                              rows="1"
+                              id="questionInput"
+                              placeholder="Đặt câu hỏi về tài liệu môn học..."></textarea>
+                    <button type="submit"
+                            class="btn btn-primary px-3 d-flex align-items-center justify-content-center"
+                            id="sendButton"
+                            aria-label="Gửi câu hỏi"
+                            style="min-height:44px;border-radius:12px;">
+                        <span class="material-symbols-outlined icon-fill" aria-hidden="true" style="font-size: 1.1rem;">send</span>
+                    </button>
+                </div>
+                <span asp-validation-for="Ask.Question" class="text-danger small d-block text-center mt-2"></span>
+                <div class="text-center small text-muted mt-2" id="loadingIndicator" aria-live="polite" role="status">
+                    Insightful AI có thể mắc sai lầm. Hãy kiểm tra lại các thông tin quan trọng.
+                </div>
+            </div>
+        </form>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const chatForm = document.getElementById('chatForm');
+        const chatMessages = document.getElementById('chatMessages');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const sendButton = document.getElementById('sendButton');
+        const questionInput = document.getElementById('questionInput');
+        const chatSessionIdInput = document.getElementById('chatSessionId');
+
+        // Scroll to bottom on load
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Auto-resize textarea
+        questionInput.addEventListener('input', () => {
+            questionInput.style.height = 'auto';
+            resetChatValidation();
+            questionInput.style.height = Math.min(questionInput.scrollHeight, 140) + 'px';
+        });
+
+        // Send on Enter (Shift+Enter = newline)
+        questionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        });
+
+        chatForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const question = questionInput.value.trim();
+            if (!question) {
+                questionInput.focus();
+                return;
+            }
+
+            const formData = new FormData(chatForm);
+            appendMessage('User', question, []);
+            resetChatValidation();
+            loadingIndicator.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Đang tạo câu trả lời...';
+            sendButton.disabled = true;
+
+            try {
+                const response = await fetch(chatForm.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const payload = await response.json();
+                if (!response.ok || !payload.succeeded) {
+                    appendMessage('Assistant', payload.errorMessage || payload.answer || 'Có lỗi khi xử lý câu hỏi.', []);
+                    return;
+                }
+
+                chatSessionIdInput.value = payload.chatSessionId || '';
+                appendMessage('Assistant', payload.answer, payload.citations || []);
+                clearQuestionInput();
+                questionInput.focus();
+            } catch {
+                appendMessage('Assistant', 'Có lỗi khi gửi câu hỏi.', []);
+            } finally {
+                loadingIndicator.textContent = 'Insightful AI có thể mắc sai lầm. Hãy kiểm tra lại các thông tin quan trọng.';
+                sendButton.disabled = false;
+            }
+        });
+
+        function resetChatValidation() {
+            questionInput.classList.remove('input-validation-error');
+
+            document
+                .querySelectorAll('[data-valmsg-for="Ask.Question"]')
+                .forEach((element) => {
+                    element.textContent = '';
+                    element.classList.remove('field-validation-error');
+                    element.classList.add('field-validation-valid');
+                });
+
+            if (window.jQuery) {
+                const validator = window.jQuery(chatForm).data('validator');
+                if (validator) {
+                    validator.resetForm();
+                }
+            }
+        }
+
+        function clearQuestionInput() {
+            questionInput.value = '';
+            questionInput.style.height = 'auto';
+            resetChatValidation();
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        }
+
+        function appendMessage(role, content, citations) {
+            document.getElementById('emptyChatState')?.remove();
+
+            const article = document.createElement('article');
+            article.className = `chat-message ${role === 'User' ? 'chat-message-user' : 'chat-message-assistant'}`;
+
+            if (role !== 'User') {
+                const avatar = document.createElement('span');
+                avatar.className = 'chat-avatar';
+                avatar.setAttribute('aria-hidden', 'true');
+                avatar.innerHTML = '<span class="material-symbols-outlined icon-fill" style="color: var(--primary-container); font-size: 1.15rem;">psychology</span>';
+                article.appendChild(avatar);
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+
+            const meta = document.createElement('div');
+            meta.className = `small ${role === 'User' ? 'text-white-50' : 'text-muted'} mb-2`;
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            meta.textContent = `${role === 'User' ? 'Bạn' : 'Chatbot'} · ${timeStr}`;
+            bubble.appendChild(meta);
+
+            const body = document.createElement('div');
+            body.className = 'chat-message-content';
+            body.textContent = content;
+            bubble.appendChild(body);
+
+            if (role === 'Assistant' && citations.length > 0) {
+                bubble.appendChild(renderCitations(citations));
+            }
+
+            article.appendChild(bubble);
+            chatMessages.appendChild(article);
+            scrollToBottom();
+        }
+
+        function renderCitations(citations) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mt-3';
+
+            const title = document.createElement('div');
+            title.className = 'small text-uppercase fw-bold text-muted mb-2';
+            title.style.letterSpacing = '0.05em';
+            title.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:middle;margin-right:4px">auto_stories</span>Nguồn tham khảo';
+            wrapper.appendChild(title);
+
+            const list = document.createElement('div');
+            list.className = 'citation-list';
+            wrapper.appendChild(list);
+
+            citations.forEach((citation) => {
+                const card = document.createElement('div');
+                card.className = 'citation-card';
+
+                // Header row: badge + title
+                const header = document.createElement('div');
+                header.className = 'citation-card-header';
+
+                const badge = document.createElement('span');
+                badge.className = 'citation-index-badge';
+                badge.textContent = citation.citationIndex;
+                header.appendChild(badge);
+
+                const titleEl = document.createElement('span');
+                titleEl.className = 'citation-card-title';
+                titleEl.textContent = citation.documentTitle;
+                header.appendChild(titleEl);
+                card.appendChild(header);
+
+                // Meta row: page/slide/chunk
+                const parts = [];
+                if (citation.pageNumber)  parts.push(`Trang ${citation.pageNumber}`);
+                if (citation.slideNumber) parts.push(`Slide ${citation.slideNumber}`);
+                if (citation.chunkIndex !== null && citation.chunkIndex !== undefined) parts.push(`Chunk ${citation.chunkIndex}`);
+
+                if (parts.length > 0) {
+                    const meta = document.createElement('div');
+                    meta.className = 'citation-card-meta';
+                    meta.textContent = parts.join(' · ');
+                    card.appendChild(meta);
+                }
+
+                // Snippet
+                if (citation.snippet) {
+                    const snippet = document.createElement('p');
+                    snippet.className = 'citation-card-snippet';
+                    snippet.textContent = citation.snippet;
+                    card.appendChild(snippet);
+                }
+
+                list.appendChild(card);
+            });
+
+            return wrapper;
+        }
+    </script>
+}

@@ -1,0 +1,83 @@
+@model ChatHistoryViewModel
+
+@{
+    ViewData["Title"] = "Chi tiết hội thoại";
+}
+
+<div class="page-heading d-flex flex-column flex-xl-row justify-content-between gap-3">
+    <div>
+        <h1 class="page-title">@Model.Session.Title</h1>
+        <p class="page-subtitle">
+            @if (!string.IsNullOrWhiteSpace(Model.Session.SubjectName))
+            {
+                <span>@Model.Session.SubjectName · </span>
+            }
+            <span>Cập nhật @((Model.Session.UpdatedAt ?? Model.Session.CreatedAt).ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</span>
+        </p>
+    </div>
+    <div class="d-flex gap-2 align-self-start">
+        <a class="btn btn-outline-secondary" asp-action="Sessions" asp-route-subjectId="@Model.Session.SubjectId">Lịch sử</a>
+        <a class="btn btn-primary" asp-action="Index" asp-route-subjectId="@Model.Session.SubjectId" asp-route-chatSessionId="@Model.Session.Id">Tiếp tục chat</a>
+    </div>
+</div>
+
+<section class="surface-card padded">
+    @if (Model.Messages.Count == 0)
+    {
+        <div class="text-muted">Phiên này chưa có tin nhắn.</div>
+    }
+    else
+    {
+        foreach (var message in Model.Messages)
+        {
+            <article class="chat-message @(message.Role == "User" ? "chat-message-user" : "chat-message-assistant")">
+                @if (message.Role != "User")
+                {
+                    <span class="chat-avatar" aria-hidden="true">AI</span>
+                }
+                <div class="chat-bubble">
+                    <div class="small @(message.Role == "User" ? "text-white-50" : "text-muted") mb-2">
+                        @(message.Role == "User" ? "Bạn" : "Chatbot") · @message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                    <div class="chat-message-content">@message.Content</div>
+
+                    @if (message.Role == "Assistant" && message.Citations.Count > 0)
+                    {
+                        <div class="mt-4">
+                            <div class="small text-uppercase fw-bold text-muted mb-2">Nguồn tham khảo</div>
+                            <div class="citation-list">
+                                @foreach (var citation in message.Citations)
+                                {
+                                    <div class="citation-item">
+                                        <span class="file-type-icon file-type-pdf" aria-hidden="true">@citation.CitationIndex</span>
+                                        <div>
+                                            <div class="fw-semibold">[@citation.CitationIndex] @citation.DocumentTitle</div>
+                                            <div class="small text-muted">
+                                                @if (citation.PageNumber.HasValue)
+                                                {
+                                                    <span>Trang @citation.PageNumber.Value</span>
+                                                }
+                                                @if (citation.SlideNumber.HasValue)
+                                                {
+                                                    <span>Slide @citation.SlideNumber.Value</span>
+                                                }
+                                                @if (citation.ChunkIndex.HasValue)
+                                                {
+                                                    <span>Chunk @citation.ChunkIndex.Value</span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(citation.Snippet))
+                                            {
+                                                <blockquote class="mb-0 mt-1">@citation.Snippet</blockquote>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </article>
+        }
+    }
+</section>

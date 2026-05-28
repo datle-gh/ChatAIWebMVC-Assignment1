@@ -1,0 +1,207 @@
+@model Presentation.Models.RagasRunResultViewModel
+
+@{
+    ViewData["Title"] = "Kết quả đánh giá RAG - " + Model.SubjectName;
+
+    string GetScoreColor(decimal? score)
+    {
+        if (!score.HasValue) return "text-muted";
+        if (score.Value >= 0.8m) return "text-success";
+        if (score.Value >= 0.5m) return "text-warning";
+        return "text-danger";
+    }
+}
+
+<div class="container-fluid px-4 py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Đánh giá RAG</a></li>
+            <li class="breadcrumb-item"><a asp-action="Questions" asp-route-subjectId="@Model.SubjectId" class="text-decoration-none">@Model.SubjectName</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Kết quả đánh giá</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800 fw-bold">Kết quả Benchmark RAGAS</h1>
+            <p class="text-muted mb-0">Môn học: <strong class="text-primary">@Model.SubjectName</strong> | Ngày chạy: @Model.RunDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-4">
+            <div class="card bg-primary text-white h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-4 d-flex flex-column justify-content-center align-items-center text-center">
+                    <h5 class="text-uppercase fw-semibold mb-2" style="letter-spacing: 1px; font-size: 0.9rem; opacity: 0.8;">Điểm RAGAS Tổng hợp</h5>
+                    <div class="display-3 fw-bold mb-3">@Model.AvgOverallScore.ToString("P1")</div>
+                    <div class="d-flex gap-3 justify-content-center mt-auto w-100 px-2" style="font-size: 0.85rem;">
+                        <div class="bg-white bg-opacity-25 rounded px-2 py-1 w-50">
+                            <div>Generator: <strong>@Model.LlmModel</strong></div>
+                        </div>
+                        <div class="bg-white bg-opacity-25 rounded px-2 py-1 w-50">
+                            <div>Retriever: <strong>@Model.EmbeddingModel</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-8">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-semibold mb-4 text-gray-800">Điểm thành phần trung bình (@Model.QuestionCount câu hỏi)</h5>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-medium text-gray-700">Faithfulness (Mức độ trung thực)</span>
+                                <span class="fw-bold @GetScoreColor(Model.AvgFaithfulness)">@Model.AvgFaithfulness.ToString("P1")</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: @(Model.AvgFaithfulness * 100)%" aria-valuenow="@(Model.AvgFaithfulness * 100)" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted">Câu trả lời có được suy ra hoàn toàn từ ngữ cảnh không? Hay LLM bị ảo giác (hallucination)?</small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-medium text-gray-700">Answer Relevancy (Độ phù hợp)</span>
+                                <span class="fw-bold @GetScoreColor(Model.AvgAnswerRelevancy)">@Model.AvgAnswerRelevancy.ToString("P1")</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: @(Model.AvgAnswerRelevancy * 100)%" aria-valuenow="@(Model.AvgAnswerRelevancy * 100)" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted">Câu trả lời có trực tiếp giải quyết vấn đề của câu hỏi không? Hay trả lời lan man?</small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-medium text-gray-700">Context Precision (Độ chính xác ngữ cảnh)</span>
+                                <span class="fw-bold @GetScoreColor(Model.AvgContextPrecision)">@Model.AvgContextPrecision.ToString("P1")</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: @(Model.AvgContextPrecision * 100)%" aria-valuenow="@(Model.AvgContextPrecision * 100)" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted">Ngữ cảnh truy xuất được có chứa thông tin đúng đắn ở các vị trí đầu tiên không?</small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-medium text-gray-700">Context Recall (Độ bao phủ ngữ cảnh)</span>
+                                <span class="fw-bold @GetScoreColor(Model.AvgContextRecall)">@Model.AvgContextRecall.ToString("P1")</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: @(Model.AvgContextRecall * 100)%" aria-valuenow="@(Model.AvgContextRecall * 100)" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted">Ngữ cảnh truy xuất được có đủ chứa toàn bộ thông tin để trả lời Ground Truth không?</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="m-0 font-weight-bold text-primary">So sanh embedding model</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-4 py-3 border-0">Embedding</th>
+                            <th class="py-3 border-0">Vector store</th>
+                            <th class="py-3 border-0 text-center">Overall</th>
+                            <th class="py-3 border-0 text-center">Faithfulness</th>
+                            <th class="py-3 border-0 text-center">Relevancy</th>
+                            <th class="py-3 border-0 text-center">Precision</th>
+                            <th class="py-3 border-0 text-center">Recall</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var summary in Model.ModelSummaries)
+                        {
+                            <tr>
+                                <td class="px-4 py-3 fw-semibold">@summary.EmbeddingModel</td>
+                                <td class="py-3">@summary.VectorStore</td>
+                                <td class="py-3 text-center fw-bold @GetScoreColor(summary.AvgOverallScore)">@summary.AvgOverallScore.ToString("P1")</td>
+                                <td class="py-3 text-center">@summary.AvgFaithfulness.ToString("P1")</td>
+                                <td class="py-3 text-center">@summary.AvgAnswerRelevancy.ToString("P1")</td>
+                                <td class="py-3 text-center">@summary.AvgContextPrecision.ToString("P1")</td>
+                                <td class="py-3 text-center">@summary.AvgContextRecall.ToString("P1")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Results -->
+    <h5 class="fw-bold text-gray-800 mb-3 mt-5">Chi tiết từng câu hỏi</h5>
+    
+    <div class="accordion shadow-sm border-0 rounded" id="resultsAccordion">
+        @{
+            int idx = 0;
+            foreach (var r in Model.Results)
+            {
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header" id="heading_@idx">
+                        <button class="accordion-button @(idx == 0 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@idx" aria-expanded="@(idx == 0 ? "true" : "false")" aria-controls="collapse_@idx">
+                            <div class="d-flex justify-content-between w-100 align-items-center pe-3">
+                                <span class="fw-semibold">@r.Question <span class="badge bg-light text-dark border ms-2">@r.EmbeddingModel</span></span>
+                                <span class="badge @(r.OverallScore >= 0.8m ? "bg-success" : (r.OverallScore >= 0.5m ? "bg-warning text-dark" : "bg-danger")) rounded-pill px-3">
+                                    @(r.OverallScore?.ToString("P1") ?? "N/A")
+                                </span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse_@idx" class="accordion-collapse collapse @(idx == 0 ? "show" : "")" aria-labelledby="heading_@idx" data-bs-parent="#resultsAccordion">
+                        <div class="accordion-body bg-light">
+                            <div class="row g-4">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <h6 class="fw-bold text-success"><span class="material-symbols-outlined fs-6 align-text-bottom">check_circle</span> Ground Truth (Đáp án chuẩn):</h6>
+                                        <div class="p-3 bg-white rounded border border-success-subtle shadow-sm">@r.GroundTruthAnswer</div>
+                                    </div>
+                                    
+                                    <div>
+                                        <h6 class="fw-bold text-primary"><span class="material-symbols-outlined fs-6 align-text-bottom">smart_toy</span> RAG Sinh ra (Generated):</h6>
+                                        <div class="p-3 bg-white rounded border border-primary-subtle shadow-sm">
+                                            @Html.Raw(r.GeneratedAnswer?.Replace("\n", "<br/>") ?? "<span class='text-muted'>Không có câu trả lời.</span>")
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-white fw-bold">Điểm thành phần (LLM Judge)</div>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                Faithfulness
+                                                <span class="fw-bold @GetScoreColor(r.Faithfulness)">@(r.Faithfulness?.ToString("P1") ?? "N/A")</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                Answer Relevancy
+                                                <span class="fw-bold @GetScoreColor(r.AnswerRelevancy)">@(r.AnswerRelevancy?.ToString("P1") ?? "N/A")</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                Context Precision
+                                                <span class="fw-bold @GetScoreColor(r.ContextPrecision)">@(r.ContextPrecision?.ToString("P1") ?? "N/A")</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                Context Recall
+                                                <span class="fw-bold @GetScoreColor(r.ContextRecall)">@(r.ContextRecall?.ToString("P1") ?? "N/A")</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                idx++;
+            }
+        }
+    </div>
+</div>

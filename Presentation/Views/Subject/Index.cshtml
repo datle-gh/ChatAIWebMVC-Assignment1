@@ -1,0 +1,268 @@
+@model SubjectPageViewModel
+
+@{
+    ViewData["Title"] = "Quản lý môn học";
+    Layout = "_Layout";
+}
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#3525cd",
+                    "primary-container": "#4f46e5",
+                    "primary-fixed": "#e2dfff",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#dad7ff",
+                    "secondary-container": "#d0e1fb",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container": "#eceef0",
+                    "surface-container-high": "#e6e8ea",
+                    "surface-bright": "#f7f9fb",
+                    "background": "#f7f9fb",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#464555",
+                    "outline": "#777587",
+                    "outline-variant": "#c7c4d8",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "secondary": "#505f76",
+                }
+            }
+        }
+    };
+</script>
+
+<style>
+    .subject-card {
+        border: 1px solid rgba(199, 196, 216, 0.2);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.04);
+        transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+        cursor: default;
+    }
+
+    .subject-card:hover {
+        box-shadow: 0 8px 28px rgba(79, 70, 229, 0.18);
+        transform: translateY(-3px);
+        border-color: rgba(79, 70, 229, 0.35);
+        cursor: pointer;
+    }
+
+    .subject-card .card-deco {
+        transition: transform 0.5s ease;
+    }
+
+    .subject-card:hover .card-deco {
+        transform: scale(1.15);
+    }
+
+    .avatar-initial {
+        font-family: 'Be Vietnam Pro', sans-serif;
+        font-weight: 700;
+    }
+</style>
+
+<div class="bg-background min-h-screen p-6 md:p-10 space-y-6">
+
+    @* Page Header *@
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-on-surface mb-1" style="font-family:'Be Vietnam Pro',sans-serif">
+                Quản lý môn học
+            </h1>
+            <p class="text-on-surface-variant" style="font-family:'Inter',sans-serif">
+                Quản lý danh sách môn học, tài liệu và sinh viên tham gia.
+            </p>
+        </div>
+        <a asp-controller="Subject" asp-action="Create"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all active:scale-95 shadow-sm hover:shadow-md flex-shrink-0"
+           style="background:#4f46e5;font-family:'Inter',sans-serif;text-decoration:none">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Thêm môn học
+        </a>
+    </div>
+
+    @* Success/Error alerts *@
+    @if (TempData["SuccessMessage"] is string successMsg)
+    {
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl border text-sm"
+             style="background:#e2dfff;border-color:#c3c0ff;color:#3525cd;font-family:'Inter',sans-serif">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            @successMsg
+        </div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMsg)
+    {
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl border text-sm"
+             style="background:#ffdad6;border-color:#ffb4ab;color:#ba1a1a;font-family:'Inter',sans-serif">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            @errorMsg
+        </div>
+    }
+
+    @if (!Model.Subjects.Any())
+    {
+        <div class="bg-surface-container-lowest rounded-2xl border border-surface-container-high py-16 text-center shadow-sm">
+            <span class="material-symbols-outlined text-on-surface-variant mb-3 block" style="font-size:48px">menu_book</span>
+            <p class="text-on-surface-variant text-lg font-medium" style="font-family:'Inter',sans-serif">Chưa có môn học nào.</p>
+            <p class="text-on-surface-variant/70 text-sm mt-1 mb-6" style="font-family:'Inter',sans-serif">
+                Nhấn "Thêm môn học" ở góc trên để tạo mới môn học.
+            </p>
+            <a asp-controller="Subject" asp-action="Create"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white transition-all active:scale-95 shadow-sm hover:shadow-md"
+               style="background:#4f46e5;font-family:'Inter',sans-serif;text-decoration:none">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Thêm môn học mới
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var subject in Model.Subjects)
+            {
+                var chatUrl = Url.Action("Index", "Chat", new { subjectId = subject.Id });
+                string[] avatarPalette = { "#4f46e5", "#0891b2", "#059669", "#d97706", "#dc2626", "#7c3aed" };
+                var displayTeachers = subject.TeacherNames.Take(3).ToList();
+                var hiddenCount = subject.TeacherNames.Count - 3;
+
+                <div class="subject-card bg-surface-container-lowest rounded-2xl p-6 flex flex-col h-full relative overflow-hidden group"
+                     onclick="window.location='@chatUrl'"
+                     role="button"
+                     tabindex="0"
+                     onkeypress="if(event.key==='Enter')window.location='@chatUrl'">
+
+                    @* Decorative corner blob *@
+                    <div class="card-deco absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-0 pointer-events-none"></div>
+
+                    <div class="relative z-10 flex flex-col h-full">
+
+                        @* Header *@
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary/10 text-primary-container transition-all group-hover:bg-primary-container group-hover:text-white">
+                                    <span class="material-symbols-outlined text-2xl">menu_book</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="inline-block text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/70 mb-0.5"
+                                          style="font-family:'Inter',sans-serif;letter-spacing:0.05em">
+                                        @subject.SubjectCode
+                                    </span>
+                                    <h3 class="font-bold text-lg text-on-surface group-hover:text-primary transition-colors line-clamp-1"
+                                        title="@subject.SubjectName"
+                                        style="font-family:'Be Vietnam Pro',sans-serif">
+                                        @subject.SubjectName
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Stats List *@
+                        <div class="space-y-2.5 mb-5 flex-grow" style="font-family:'Inter',sans-serif">
+
+                            @* Giảng viên *@
+                            @if (subject.TeacherNames.Any())
+                            {
+                                <div class="flex items-center gap-2 text-on-surface-variant">
+                                    <span class="material-symbols-outlined text-[18px] flex-shrink-0" style="color:#d97706">school</span>
+                                    <span class="text-sm line-clamp-1">@string.Join(", ", subject.TeacherNames)</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="flex items-center gap-2" style="color:rgba(70,69,85,0.5)">
+                                    <span class="material-symbols-outlined text-[18px] flex-shrink-0">school</span>
+                                    <span class="text-sm italic">Chưa có giảng viên</span>
+                                </div>
+                            }
+
+                            @* Sinh viên *@
+                            <div class="flex items-center gap-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[18px] flex-shrink-0" style="color:#059669">groups</span>
+                                <span class="text-sm">@subject.StudentCount Sinh viên</span>
+                            </div>
+
+                            @* Tài liệu *@
+                            <div class="flex items-center gap-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[18px] flex-shrink-0" style="color:#4f46e5">library_books</span>
+                                <span class="text-sm">
+                                    @subject.DocumentCount Tài liệu
+                                    @if (subject.IndexedDocumentCount > 0)
+                                    {
+                                        <span class="ml-1 text-[11px] font-semibold" style="color:#059669">(@subject.IndexedDocumentCount indexed)</span>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+
+                        @* Footer: Avatars + Actions *@
+                        <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between mt-auto"
+                             onclick="event.stopPropagation()">
+
+                            @* Teacher Avatars *@
+                            <div class="flex -space-x-2">
+                                @for (int i = 0; i < displayTeachers.Count; i++)
+                                {
+                                    var tName = displayTeachers[i];
+                                    var parts = tName.Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+                                    var letter = parts.Length > 0 ? parts[parts.Length - 1][0].ToString().ToUpper() : "?";
+                                    var bg = avatarPalette[i % avatarPalette.Length];
+                                    <div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs avatar-initial flex-shrink-0"
+                                         style="background:@bg"
+                                         title="@tName">
+                                        @letter
+                                    </div>
+                                }
+                                @if (hiddenCount > 0)
+                                {
+                                    <div class="w-8 h-8 rounded-full border-2 border-white bg-surface-container flex items-center justify-center text-on-surface-variant flex-shrink-0"
+                                         style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600"
+                                         title="và @hiddenCount người khác">
+                                        +@hiddenCount
+                                    </div>
+                                }
+                                @if (!subject.TeacherNames.Any())
+                                {
+                                    <div class="w-8 h-8 rounded-full border-2 border-dashed border-outline-variant/60 bg-surface-container-low flex items-center justify-center flex-shrink-0"
+                                         style="color:rgba(70,69,85,0.4)">
+                                        <span class="material-symbols-outlined text-[14px]">person</span>
+                                    </div>
+                                }
+                            </div>
+
+                            @* Edit / Delete *@
+                            <div class="flex items-center gap-1">
+                                <a asp-controller="Subject" asp-action="Edit" asp-route-id="@subject.Id"
+                                   class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all duration-150"
+                                   title="Chỉnh sửa"
+                                   style="text-decoration:none;cursor:pointer"
+                                   onclick="event.stopPropagation()">
+                                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                                </a>
+                                <form method="post" action="@Url.Action("Delete", "Subject", new { id = subject.Id })"
+                                      class="inline m-0"
+                                      onclick="event.stopPropagation()">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="p-2 rounded-lg text-on-surface-variant hover:bg-error-container hover:text-error transition-all duration-150 border-0 bg-transparent"
+                                            title="Xóa"
+                                            style="cursor:pointer"
+                                            data-name="@subject.SubjectName"
+                                            onclick="event.stopPropagation();return confirm('Bạn có chắc chắn muốn xóa môn học &quot;' + this.dataset.name + '&quot;? Hành động này không thể hoàn tác.')">
+                                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

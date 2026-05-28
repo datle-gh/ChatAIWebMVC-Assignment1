@@ -1,0 +1,16 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Có lỗi xảy ra";
+}
+
+<section class="surface-card padded">
+    <h1 class="h3 fw-bold text-danger">Có lỗi xảy ra</h1>
+    <p class="text-muted mb-3">Hệ thống chưa thể xử lý yêu cầu của bạn. Vui lòng thử lại sau.</p>
+
+    @if (Model.ShowRequestId)
+    {
+        <p class="mb-0">
+            <strong>Mã yêu cầu:</strong> <code>@Model.RequestId</code>
+        </p>
+    }
+</section>

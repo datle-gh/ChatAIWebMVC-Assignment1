@@ -1,0 +1,151 @@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var displayName = User.Identity?.Name ?? "User";
+    var avatarLetter = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Trim()[0].ToString();
+
+    bool IsActive(string targetController, string? targetAction = null)
+    {
+        return string.Equals(controller, targetController, StringComparison.OrdinalIgnoreCase)
+            && (targetAction is null || string.Equals(action, targetAction, StringComparison.OrdinalIgnoreCase));
+    }
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ChatAIWeb</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Presentation.styles.css" asp-append-version="true" />
+</head>
+<body class="app-body">
+    @if (isAuthenticated)
+    {
+        <button class="shell-scrim" type="button" data-shell-close aria-label="Đóng menu"></button>
+        <aside class="app-sidebar" id="appSidebar" aria-label="Điều hướng chính">
+            <div class="brand-block">
+                <a class="brand-mark" asp-controller="Chat" asp-action="Index" aria-label="ChatAIWeb">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings:'FILL' 1;">auto_awesome</span>
+                </a>
+                <div style="flex:1;min-width:0">
+                    <a class="brand-title" asp-controller="Chat" asp-action="Index">Insightful AI</a>
+                    <div class="brand-subtitle">Hệ thống học tập thông minh</div>
+                </div>
+                @* Desktop collapse/expand button — inside brand-block for correct flow layout *@
+                <button class="sidebar-collapse-btn"
+                        type="button"
+                        data-sidebar-collapse
+                        aria-label="Thu gọn menu"
+                        title="Thu gọn / Mở rộng menu">
+                    <span class="material-symbols-outlined" style="font-size:1rem">chevron_left</span>
+                </button>
+            </div>
+
+            <nav class="shell-nav">
+                @if (!User.IsInRole("Admin"))
+                {
+                    <a class="shell-nav-link @(IsActive("Dashboard", "Index") ? "active" : "")" asp-controller="Dashboard" asp-action="Index" title="Bảng điều khiển">
+                        <span class="material-symbols-outlined shell-nav-icon @(IsActive("Dashboard", "Index") ? "icon-fill" : "")" aria-hidden="true">dashboard</span>
+                        <span>Bảng điều khiển</span>
+                    </a>
+                }
+                <a class="shell-nav-link @(IsActive("Chat", "Index") || IsActive("Dashboard", "SelectSubject") ? "active" : "")" asp-controller="Dashboard" asp-action="SelectSubject" title="Gia sư AI">
+                    <span class="material-symbols-outlined shell-nav-icon @(IsActive("Chat", "Index") || IsActive("Dashboard", "SelectSubject") ? "icon-fill" : "")" aria-hidden="true">psychology</span>
+                    <span>Gia sư AI</span>
+                </a>
+                <a class="shell-nav-link @(IsActive("Document") ? "active" : "")" asp-controller="Document" asp-action="Index" title="Kho tài liệu">
+                    <span class="material-symbols-outlined shell-nav-icon @(IsActive("Document") ? "icon-fill" : "")" aria-hidden="true">folder_open</span>
+                    <span>Kho tài liệu</span>
+                </a>
+                <a class="shell-nav-link @(IsActive("Chat", "Sessions") || IsActive("Chat", "History") ? "active" : "")" asp-controller="Chat" asp-action="Sessions" title="Lịch sử hội thoại">
+                    <span class="material-symbols-outlined shell-nav-icon" aria-hidden="true">history</span>
+                    <span>Lịch sử hội thoại</span>
+                </a>
+                @if (User.IsInRole("Admin") || User.IsInRole("Teacher"))
+                {
+                    <a class="shell-nav-link @(IsActive("Subject") ? "active" : "")" asp-controller="Subject" asp-action="Index">
+                        <span class="material-symbols-outlined shell-nav-icon @(IsActive("Subject") ? "icon-fill" : "")" aria-hidden="true">menu_book</span>
+                        <span>Quản lý môn học</span>
+                    </a>
+                }
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="sidebar-section-label mt-3 mb-2 px-3 text-muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Hệ thống</div>
+                    <a class="shell-nav-link @(IsActive("AdminDashboard") ? "active" : "")" asp-controller="AdminDashboard" asp-action="Index">
+                        <span class="material-symbols-outlined shell-nav-icon @(IsActive("AdminDashboard") ? "icon-fill" : "")" aria-hidden="true">insert_chart</span>
+                        <span>Dashboard Quản trị</span>
+                    </a>
+                    <a class="shell-nav-link @(IsActive("AdminUsers") ? "active" : "")" asp-controller="AdminUsers" asp-action="Index">
+                        <span class="material-symbols-outlined shell-nav-icon @(IsActive("AdminUsers") ? "icon-fill" : "")" aria-hidden="true">admin_panel_settings</span>
+                        <span>Tài khoản</span>
+                    </a>
+                    <a class="shell-nav-link @(IsActive("RagasEvaluation") ? "active" : "")" asp-controller="RagasEvaluation" asp-action="Index">
+                        <span class="material-symbols-outlined shell-nav-icon @(IsActive("RagasEvaluation") ? "icon-fill" : "")" aria-hidden="true">model_training</span>
+                        <span>Đánh giá mô hình</span>
+                    </a>
+                    <a class="shell-nav-link @(IsActive("SystemSettings") ? "active" : "")" asp-controller="SystemSettings" asp-action="Index">
+                        <span class="material-symbols-outlined shell-nav-icon @(IsActive("SystemSettings") ? "icon-fill" : "")" aria-hidden="true">settings</span>
+                        <span>Cấu hình AI</span>
+                    </a>
+                }
+            </nav>
+
+
+            <div class="sidebar-footer">
+                <a class="shell-nav-link compact" asp-controller="Account" asp-action="Profile">
+                    <span class="material-symbols-outlined shell-nav-icon" aria-hidden="true">account_circle</span>
+                    <span>@User.Identity?.Name</span>
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="shell-nav-link compact danger w-100">
+                        <span class="material-symbols-outlined shell-nav-icon" aria-hidden="true">logout</span>
+                        <span>Đăng xuất</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="app-shell">
+            <header class="app-topbar">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="app-icon-button" type="button" data-shell-toggle aria-controls="appSidebar" aria-expanded="false" aria-label="Mở/Đóng menu">
+                        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+                    </button>
+                    <div class="topbar-title d-none d-sm-block">ChatAIWeb</div>
+                </div>
+                <div class="topbar-actions">
+                    <a class="app-icon-button" asp-controller="Document" asp-action="Upload" aria-label="Tải tài liệu lên" title="Tải tài liệu lên">
+                        <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+                    </a>
+                    <a class="user-chip" asp-controller="Account" asp-action="Profile">
+                        <span class="avatar-dot" aria-hidden="true">@avatarLetter</span>
+                        <span class="d-none d-md-inline">@displayName</span>
+                    </a>
+                </div>
+            </header>
+
+            <main class="app-main @(ViewData["MainClass"])" role="main">
+                @RenderBody()
+            </main>
+        </div>
+    }
+    else
+    {
+        <main class="guest-main" role="main">
+            @RenderBody()
+        </main>
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
