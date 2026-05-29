@@ -39,7 +39,7 @@
                     <div class="small @(message.Role == "User" ? "text-white-50" : "text-muted") mb-2">
                         @(message.Role == "User" ? "Bạn" : "Chatbot") · @message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                     </div>
-                    <div class="chat-message-content">@message.Content</div>
+                    <div class="chat-message-content @(message.Role == "Assistant" ? "chat-message-markdown" : "")" data-render-markdown="@(message.Role == "Assistant" ? "true" : "false")">@message.Content</div>
 
                     @if (message.Role == "Assistant" && message.Citations.Count > 0)
                     {
@@ -81,3 +81,10 @@
         }
     }
 </section>
+
+@section Scripts {
+    <script src="~/js/chat-markdown.js" asp-append-version="true"></script>
+    <script>
+        window.ChatMarkdown?.renderAll(document);
+    </script>
+}

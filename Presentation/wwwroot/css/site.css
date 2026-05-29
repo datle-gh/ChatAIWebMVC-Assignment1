@@ -804,6 +804,58 @@ a:hover {
   white-space: pre-wrap;
 }
 
+.chat-message-markdown {
+  white-space: normal;
+}
+
+.chat-message-markdown p,
+.chat-message-markdown ol,
+.chat-message-markdown ul,
+.chat-message-markdown pre {
+  margin: 0 0 0.85rem;
+}
+
+.chat-message-markdown p:last-child,
+.chat-message-markdown ol:last-child,
+.chat-message-markdown ul:last-child,
+.chat-message-markdown pre:last-child {
+  margin-bottom: 0;
+}
+
+.chat-message-markdown ol,
+.chat-message-markdown ul {
+  padding-left: 1.35rem;
+}
+
+.chat-message-markdown li + li {
+  margin-top: 0.4rem;
+}
+
+.chat-message-markdown strong {
+  font-weight: 800;
+}
+
+.chat-message-markdown code {
+  padding: 0.1rem 0.35rem;
+  background: rgba(79, 70, 229, 0.08);
+  border-radius: 6px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.92em;
+}
+
+.chat-message-markdown pre {
+  padding: 12px;
+  overflow-x: auto;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+}
+
+.chat-message-markdown pre code {
+  padding: 0;
+  background: transparent;
+}
+
 .chat-bubble {
   max-width: min(760px, 82%);
   padding: 18px 20px;

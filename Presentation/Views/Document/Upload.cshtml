@@ -149,7 +149,11 @@
     }
 
     .upload-dropzone input[type="file"] {
-        display: none;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
     }
 
     /* ── File chip tags ── */
@@ -302,7 +306,7 @@
             </div>
 
             @* ── Dropzone ── *@
-            <label class="upload-dropzone" id="dropzone" asp-for="Files">
+            <div class="upload-dropzone" id="dropzone" role="button" tabindex="0" aria-controls="fileInput">
                 <span class="upload-icon" aria-hidden="true">
                     <span class="material-symbols-outlined icon-fill" style="font-size: 3rem; color: #4f46e5;">cloud_upload</span>
                 </span>
@@ -318,7 +322,7 @@
                     Giới hạn: tối đa @Model.MaxFileSizeMb MB / file &nbsp;·&nbsp; @Model.MaxFilesPerBatch file / lần
                 </span>
                 <input asp-for="Files" type="file" accept=".pdf,.docx,.pptx" id="fileInput" data-upload-input aria-describedby="upload-help" multiple />
-            </label>
+            </div>
             <span asp-validation-for="Files" class="field-error mb-2"></span>
             <div id="clientError" class="field-error d-none mb-2">
                 <span class="material-symbols-outlined">error_outline</span>
@@ -415,6 +419,7 @@
 
         let connection;
         let isUploading = false;
+        let selectedFiles = Array.from(fileInput.files);
 
         function getFileIcon(name) {
             const ext = name.split('.').pop().toLowerCase();
@@ -460,25 +465,40 @@
             uploadResult.className = 'alert d-none';
         }
 
-        function setFiles(files) {
+        function getFileKey(file) {
+            return `${file.name}::${file.size}::${file.lastModified}`;
+        }
+
+        function syncFileInput() {
             const dt = new DataTransfer();
-            Array.from(files).forEach(file => dt.items.add(file));
+            selectedFiles.forEach(file => dt.items.add(file));
             fileInput.files = dt.files;
+        }
+
+        function setFiles(files) {
+            selectedFiles = Array.from(files);
+            syncFileInput();
             renderFiles();
         }
 
         function appendFiles(files) {
-            const existing = Array.from(fileInput.files);
-            setFiles([...existing, ...Array.from(files)]);
+            const mergedFiles = new Map(selectedFiles.map(file => [getFileKey(file), file]));
+            Array.from(files).forEach(file => {
+                if (!mergedFiles.has(getFileKey(file))) {
+                    mergedFiles.set(getFileKey(file), file);
+                }
+            });
+            setFiles(Array.from(mergedFiles.values()));
         }
 
         function removeFile(indexToRemove) {
-            const files = Array.from(fileInput.files).filter((_, index) => index !== indexToRemove);
-            setFiles(files);
+            selectedFiles = selectedFiles.filter((_, index) => index !== indexToRemove);
+            syncFileInput();
+            renderFiles();
         }
 
         function validateSelectedFiles() {
-            const files = Array.from(fileInput.files);
+            const files = selectedFiles;
             if (files.length === 0) { clearClientError(); return true; }
 
             if (files.length > maxFiles) {
@@ -503,7 +523,7 @@
         }
 
         function renderFiles() {
-            const files = Array.from(fileInput.files);
+            const files = selectedFiles;
             fileList.innerHTML = '';
             uploadEmpty.classList.toggle('d-none', files.length > 0);
             submitBtn.disabled = files.length === 0 || isUploading || !validateSelectedFiles();
@@ -598,7 +618,21 @@
             if (connection) { await connection.stop(); connection = null; }
         }
 
-        fileInput.addEventListener('change', renderFiles);
+        fileInput.addEventListener('change', () => {
+            appendFiles(fileInput.files);
+        });
+
+        dropzone.addEventListener('click', (event) => {
+            if (event.target.closest('.btn-close') || isUploading) return;
+            fileInput.click();
+        });
+
+        dropzone.addEventListener('keydown', (event) => {
+            if ((event.key === 'Enter' || event.key === ' ') && !isUploading) {
+                event.preventDefault();
+                fileInput.click();
+            }
+        });
 
         dropzone.addEventListener('dragover', (e) => {
             e.preventDefault();

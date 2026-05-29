@@ -109,7 +109,7 @@
                                 <div class="small @(message.Role == "User" ? "text-white-50" : "text-muted") mb-2">
                                     @(message.Role == "User" ? "Bạn" : "Chatbot") · @message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                                 </div>
-                                <div class="chat-message-content">@message.Content</div>
+                                <div class="chat-message-content @(message.Role == "Assistant" ? "chat-message-markdown" : "")" data-render-markdown="@(message.Role == "Assistant" ? "true" : "false")">@message.Content</div>
 
                                 @if (message.Role == "Assistant" && message.Citations.Count > 0)
                                 {
@@ -178,6 +178,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/chat-markdown.js" asp-append-version="true"></script>
     <script>
         const chatForm = document.getElementById('chatForm');
         const chatMessages = document.getElementById('chatMessages');
@@ -185,6 +186,8 @@
         const sendButton = document.getElementById('sendButton');
         const questionInput = document.getElementById('questionInput');
         const chatSessionIdInput = document.getElementById('chatSessionId');
+
+        window.ChatMarkdown?.renderAll(document);
 
         // Scroll to bottom on load
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -298,7 +301,16 @@
 
             const body = document.createElement('div');
             body.className = 'chat-message-content';
-            body.textContent = content;
+            if (role === 'Assistant') {
+                body.classList.add('chat-message-markdown');
+                if (window.ChatMarkdown) {
+                    body.innerHTML = window.ChatMarkdown.render(content);
+                } else {
+                    body.textContent = content;
+                }
+            } else {
+                body.textContent = content;
+            }
             bubble.appendChild(body);
 
             if (role === 'Assistant' && citations.length > 0) {
