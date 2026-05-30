@@ -48,12 +48,19 @@ public sealed record RagasModelSummaryDto(
     string EmbeddingModel,
     string? LlmModel,
     string? VectorStore,
+    string ChunkingStrategy,
     int QuestionCount,
     decimal AvgFaithfulness,
     decimal AvgAnswerRelevancy,
     decimal AvgContextPrecision,
     decimal AvgContextRecall,
     decimal AvgOverallScore);
+
+public sealed record BenchmarkChunkingStrategyDto(
+    string Key,
+    string DisplayName,
+    string Description,
+    bool IsDefault);
 
 public sealed record SubjectEvaluationSummaryDto(
     int SubjectId,

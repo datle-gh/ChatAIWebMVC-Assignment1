@@ -18,7 +18,7 @@
             <p class="text-muted mb-0">Ground-truth dataset cho môn học: <strong class="text-primary">@Model.SubjectName</strong></p>
         </div>
         <div class="d-flex gap-2">
-            @if (!Model.Questions.Any())
+            @if (Model.Questions.Count < 50)
             {
                 <form asp-action="SeedQuestions" method="post" class="d-inline">
                     <input type="hidden" name="subjectId" value="@Model.SubjectId" />
@@ -54,6 +54,31 @@
                         </label>
                     </div>
                 }
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="m-0 font-weight-bold text-primary">Chunking / retrieval strategies</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach (var strategy in Model.ChunkingStrategies)
+                {
+                    <div class="col-md-6 col-xl-4">
+                        <label class="border rounded-3 p-3 w-100 h-100 d-flex gap-2 align-items-start">
+                            <input class="form-check-input benchmark-strategy" type="checkbox" value="@strategy.Key" checked="@strategy.IsSelected" />
+                            <span>
+                                <span class="fw-semibold d-block">@strategy.DisplayName</span>
+                                <span class="text-muted small">@strategy.Description</span>
+                            </span>
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="text-muted small mt-3">
+                Phase 4 se luu rieng ket qua theo tung cap embedding model va strategy de so sanh bang diem.
             </div>
         </div>
     </div>
@@ -154,13 +179,20 @@
                 var alertMsg = $('#evaluationAlertMessage');
                 var subjectId = @Model.SubjectId;
                 var embeddingModels = $('.benchmark-model:checked').map(function() { return $(this).val(); }).get();
+                var chunkingStrategies = $('.benchmark-strategy:checked').map(function() { return $(this).val(); }).get();
                 if (embeddingModels.length === 0) {
                     alertBox.removeClass('d-none alert-info alert-success').addClass('alert-danger');
                     alertBox.find('.spinner-border').addClass('d-none');
                     alertMsg.text('Vui lòng chọn ít nhất một embedding model để benchmark.');
                     return;
                 }
-                
+                if (chunkingStrategies.length === 0) {
+                    alertBox.removeClass('d-none alert-info alert-success').addClass('alert-danger');
+                    alertBox.find('.spinner-border').addClass('d-none');
+                    alertMsg.text('Vui long chon it nhat mot chunking strategy de benchmark.');
+                    return;
+                }
+
                 btn.prop('disabled', true);
                 alertBox.removeClass('d-none alert-danger').addClass('alert-info');
                 alertBox.find('.spinner-border').removeClass('d-none');
@@ -170,7 +202,7 @@
                     url: '@Url.Action("RunEvaluation", "RagasEvaluation")',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ subjectId: subjectId, embeddingModels: embeddingModels }),
+                    data: JSON.stringify({ subjectId: subjectId, embeddingModels: embeddingModels, chunkingStrategies: chunkingStrategies }),
                     success: function(response) {
                         if (response.success) {
                             alertBox.removeClass('alert-info').addClass('alert-success');

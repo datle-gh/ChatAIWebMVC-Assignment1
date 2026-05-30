@@ -21,6 +21,19 @@ public interface IDocumentService
         int documentId,
         CancellationToken cancellationToken = default);
 
+    Task<DocumentUploadResult> VerifyAndIndexAsync(
+        int documentId,
+        int verifiedBy,
+        string? verifierRole,
+        CancellationToken cancellationToken = default);
+
+    Task<DocumentUploadResult> RejectAsync(
+        int documentId,
+        int rejectedBy,
+        string? rejecterRole,
+        string? reason,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<SubjectOptionDto>> GetSubjectOptionsAsync(
         CancellationToken cancellationToken = default);
 

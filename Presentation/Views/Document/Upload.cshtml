@@ -2,6 +2,11 @@
 
 @{
     ViewData["Title"] = "Tải tài liệu lên";
+    var isStudentUpload = User.IsInRole("Student");
+    var selectedSubject = Model.SubjectId.HasValue
+        ? Model.Subjects.FirstOrDefault(subject => subject.Id == Model.SubjectId.Value)
+        : null;
+    var submitText = isStudentUpload ? "Tải lên" : "Tải lên và Index";
 }
 
 <style>
@@ -283,14 +288,27 @@
 
             @* ── Môn học ── *@
             <div class="upload-section">
-                <label asp-for="SubjectId" class="form-label"></label>
-                <select asp-for="SubjectId" class="form-select">
-                    <option value="">-- Chọn môn học --</option>
-                    @foreach (var subject in Model.Subjects)
-                    {
-                        <option value="@subject.Id">@subject.DisplayName</option>
-                    }
-                </select>
+                @if (selectedSubject is not null)
+                {
+                    <label class="form-label">Mã môn học</label>
+                    <input asp-for="SubjectId" type="hidden" />
+                    <div class="form-control d-flex align-items-center justify-content-between gap-3"
+                         style="background:#f8fafc;min-height:44px">
+                        <span class="fw-semibold">@selectedSubject.DisplayName</span>
+                        <span class="badge bg-light text-dark border">@selectedSubject.SubjectCode</span>
+                    </div>
+                }
+                else
+                {
+                    <label asp-for="SubjectId" class="form-label"></label>
+                    <select asp-for="SubjectId" class="form-select">
+                        <option value="">-- Chọn môn học --</option>
+                        @foreach (var subject in Model.Subjects)
+                        {
+                            <option value="@subject.Id">@subject.DisplayName</option>
+                        }
+                    </select>
+                }
                 <span asp-validation-for="SubjectId" class="field-error"></span>
             </div>
 
@@ -339,7 +357,7 @@
                 <div class="d-flex justify-content-end mt-4">
                     <button type="submit" class="upload-submit-btn" id="submitBtn" disabled>
                         <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 1.1rem;">upload_file</span>
-                        Tải lên và Index
+                        @submitText
                     </button>
                 </div>
             </div>
@@ -354,7 +372,16 @@
                     <span class="material-symbols-outlined icon-fill" style="color: #4f46e5; font-size: 1.3rem;">psychology</span>
                     <h2 class="h5 fw-bold mb-0" style="font-family:'Be Vietnam Pro',sans-serif">Tiến trình xử lý AI</h2>
                 </div>
-                <p class="text-muted mb-3" style="font-size:0.875rem">Sau khi tải lên, hệ thống sẽ đọc nội dung, chia chunk, tạo embedding và đánh dấu tài liệu đã index.</p>
+                <p class="text-muted mb-3" style="font-size:0.875rem">
+                    @if (isStudentUpload)
+                    {
+                        <span>Sau khi tải lên, tài liệu sẽ chờ giảng viên duyệt trước khi hệ thống index.</span>
+                    }
+                    else
+                    {
+                        <span>Sau khi tải lên, hệ thống sẽ đọc nội dung, chia chunk, tạo embedding và đánh dấu tài liệu đã index.</span>
+                    }
+                </p>
                 <div class="progress-thin mb-2" aria-hidden="true"><span id="overallProgressBar" style="width: 0%"></span></div>
                 <div class="upload-hint mb-3" id="progressStatus">Chưa có tài liệu đang xử lý trong phiên này.</div>
                 <div class="d-grid gap-2" id="progressList"></div>
@@ -416,6 +443,7 @@
         const maxBatchSizeMb = Number(form.dataset.maxBatchSizeMb);
         const maxFileSizeBytes = maxFileSizeMb * 1024 * 1024;
         const maxBatchSizeBytes = maxBatchSizeMb * 1024 * 1024;
+        const submitButtonText = '@submitText';
 
         let connection;
         let isUploading = false;
@@ -675,7 +703,7 @@
             } finally {
                 await stopSignalR();
                 isUploading = false;
-                submitBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true" style="font-size:1.1rem">upload_file</span> Tải lên và Index';
+                submitBtn.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true" style="font-size:1.1rem">upload_file</span> ${submitButtonText}`;
                 renderFiles();
             }
         });

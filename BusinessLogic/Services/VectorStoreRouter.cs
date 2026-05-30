@@ -71,7 +71,24 @@ public sealed class VectorStoreRouter : IVectorStoreService, IVectorSearchServic
 
         try
         {
-            return await _qdrantStore.SearchAsync(subjectId, embeddingModel, questionEmbedding, topK, cancellationToken);
+            var qdrantResults = await _qdrantStore.SearchAsync(
+                subjectId,
+                embeddingModel,
+                questionEmbedding,
+                topK,
+                cancellationToken);
+
+            if (qdrantResults.Count > 0)
+            {
+                return qdrantResults;
+            }
+
+            _logger.LogInformation(
+                "Qdrant returned no chunks for subject {SubjectId}, model {EmbeddingModel}. Falling back to SQL metadata embeddings.",
+                subjectId,
+                embeddingModel);
+
+            return await _sqlStore.SearchAsync(subjectId, embeddingModel, questionEmbedding, topK, cancellationToken);
         }
         catch (Exception exception)
         {

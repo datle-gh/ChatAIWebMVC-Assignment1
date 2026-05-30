@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using BusinessObject.Entities;
 using DataAccess.Repositories;
@@ -7,6 +8,9 @@ namespace BusinessLogic.Services;
 
 public sealed class EmbeddingBackfillService : IEmbeddingBackfillService
 {
+    private static readonly ConcurrentDictionary<string, DateTimeOffset> LastPrimaryVectorStoreHydration = new();
+    private static readonly TimeSpan PrimaryVectorStoreHydrationInterval = TimeSpan.FromMinutes(10);
+
     private readonly IDocumentChunkRepository _chunkRepository;
     private readonly IDocumentChunkEmbeddingRepository _embeddingRepository;
     private readonly IEmbeddingModelRegistry _embeddingModelRegistry;
@@ -83,13 +87,106 @@ public sealed class EmbeddingBackfillService : IEmbeddingBackfillService
         }
 
         await _embeddingRepository.AddRangeAsync(rows, cancellationToken);
-        await _vectorStoreService.UpsertAsync(
-            embeddingService.ModelKey,
-            embeddingService.ProviderName,
-            embeddedChunks,
-            vectors,
-            cancellationToken);
+
+        if (IsPrimaryQdrantStore())
+        {
+            var forceHydration = rows.Count > 0;
+            if (forceHydration || ShouldHydratePrimaryVectorStore(subjectId, embeddingService.ModelKey))
+            {
+                await HydratePrimaryVectorStoreFromSqlAsync(
+                    subjectId,
+                    embeddingService.ModelKey,
+                    cancellationToken);
+            }
+        }
+        else
+        {
+            await _vectorStoreService.UpsertAsync(
+                embeddingService.ModelKey,
+                embeddingService.ProviderName,
+                embeddedChunks,
+                vectors,
+                cancellationToken);
+        }
 
         return rows.Count;
+    }
+
+    private async Task HydratePrimaryVectorStoreFromSqlAsync(
+        int subjectId,
+        string embeddingModel,
+        CancellationToken cancellationToken)
+    {
+        var storedEmbeddings = await _embeddingRepository.GetBySubjectAsync(
+            subjectId,
+            embeddingModel,
+            cancellationToken);
+
+        var hydratedEmbeddings = storedEmbeddings
+            .Select(embedding => new
+            {
+                Chunk = embedding.DocumentChunk,
+                Provider = embedding.EmbeddingProvider,
+                Vector = DeserializeEmbedding(embedding.EmbeddingJson)
+            })
+            .Where(item => item.Vector.Length > 0)
+            .ToList();
+
+        if (hydratedEmbeddings.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var providerGroup in hydratedEmbeddings.GroupBy(item => item.Provider))
+        {
+            await _vectorStoreService.UpsertAsync(
+                embeddingModel,
+                providerGroup.Key,
+                providerGroup.Select(item => item.Chunk).ToList(),
+                providerGroup.Select(item => item.Vector).ToList(),
+                cancellationToken);
+        }
+    }
+
+    private bool IsPrimaryQdrantStore()
+    {
+        return string.Equals(_vectorStoreService.Name, "Qdrant", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldHydratePrimaryVectorStore(int subjectId, string embeddingModel)
+    {
+        var key = $"{subjectId}:{embeddingModel}";
+        var now = DateTimeOffset.UtcNow;
+
+        if (!LastPrimaryVectorStoreHydration.TryGetValue(key, out var lastHydration))
+        {
+            LastPrimaryVectorStoreHydration[key] = now;
+            return true;
+        }
+
+        if (now - lastHydration < PrimaryVectorStoreHydrationInterval)
+        {
+            return false;
+        }
+
+        LastPrimaryVectorStoreHydration[key] = now;
+        return true;
+    }
+
+    private static float[] DeserializeEmbedding(string? embeddingJson)
+    {
+        if (string.IsNullOrWhiteSpace(embeddingJson))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<float[]>(embeddingJson) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 }

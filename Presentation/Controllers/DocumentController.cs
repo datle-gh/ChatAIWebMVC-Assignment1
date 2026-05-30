@@ -32,7 +32,12 @@ public sealed class DocumentController : Controller
         CancellationToken cancellationToken)
     {
         var result = await _documentService.GetDocumentsAsync(
-            new DocumentListRequestDto(searchTerm, subjectId, status),
+            new DocumentListRequestDto(
+                searchTerm,
+                subjectId,
+                status,
+                GetCurrentUserId(),
+                User.FindFirstValue(ClaimTypes.Role)),
             cancellationToken);
 
         return View(new DocumentIndexViewModel
@@ -46,21 +51,25 @@ public sealed class DocumentController : Controller
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Teacher")]
-    public async Task<IActionResult> Upload(CancellationToken cancellationToken)
+    public async Task<IActionResult> Upload(int? subjectId, CancellationToken cancellationToken)
     {
+        var subjects = await GetSubjectOptionsAsync(cancellationToken);
+        var selectedSubjectId = subjectId.HasValue && subjects.Any(subject => subject.Id == subjectId.Value)
+            ? subjectId
+            : null;
+
         return View(new DocumentUploadViewModel
         {
+            SubjectId = selectedSubjectId,
             UploadId = Guid.NewGuid().ToString("N"),
             MaxFileSizeMb = _uploadSettings.MaxFileSizeMb,
             MaxFilesPerBatch = _uploadSettings.MaxFilesPerBatch,
             MaxBatchSizeMb = _uploadSettings.MaxBatchSizeMb,
-            Subjects = await GetSubjectOptionsAsync(cancellationToken)
+            Subjects = subjects
         });
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Teacher")]
     [ValidateAntiForgeryToken]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload(
@@ -127,6 +136,61 @@ public sealed class DocumentController : Controller
                 await stream.DisposeAsync();
             }
         }
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin,Teacher")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Verify(int id, int? subjectId, CancellationToken cancellationToken)
+    {
+        var result = await _documentService.VerifyAndIndexAsync(
+            id,
+            GetCurrentUserId(),
+            User.FindFirstValue(ClaimTypes.Role),
+            cancellationToken);
+
+        if (Request.Headers.XRequestedWith == "XMLHttpRequest")
+        {
+            return Json(new
+            {
+                succeeded = result.Succeeded,
+                message = result.Message,
+                documentId = result.DocumentId
+            });
+        }
+
+        TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return RedirectToAction(nameof(Index), new { subjectId });
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin,Teacher")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reject(
+        int id,
+        int? subjectId,
+        string? reason,
+        CancellationToken cancellationToken)
+    {
+        var result = await _documentService.RejectAsync(
+            id,
+            GetCurrentUserId(),
+            User.FindFirstValue(ClaimTypes.Role),
+            reason,
+            cancellationToken);
+
+        if (Request.Headers.XRequestedWith == "XMLHttpRequest")
+        {
+            return Json(new
+            {
+                succeeded = result.Succeeded,
+                message = result.Message,
+                documentId = result.DocumentId
+            });
+        }
+
+        TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return RedirectToAction(nameof(Index), new { subjectId });
     }
 
     private int GetCurrentUserId()

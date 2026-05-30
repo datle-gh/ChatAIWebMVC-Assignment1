@@ -58,6 +58,15 @@ public sealed class RagasEvaluationController : Controller
                     IsSelected = embeddingModel.Enabled
                 })
                 .ToList(),
+            ChunkingStrategies = _evaluationService.GetChunkingStrategies()
+                .Select(strategy => new RagasChunkingStrategyOption
+                {
+                    Key = strategy.Key,
+                    DisplayName = strategy.DisplayName,
+                    Description = strategy.Description,
+                    IsSelected = strategy.IsDefault
+                })
+                .ToList(),
             Questions = questions.Select(question => new RagasQuestionItem
             {
                 Id = question.Id,
@@ -118,6 +127,7 @@ public sealed class RagasEvaluationController : Controller
             var result = await _evaluationService.RunEvaluationAsync(
                 request.SubjectId,
                 request.EmbeddingModels,
+                request.ChunkingStrategies,
                 cancellationToken);
 
             if (result is null)
@@ -165,6 +175,7 @@ public sealed class RagasEvaluationController : Controller
                 EmbeddingModel = summary.EmbeddingModel,
                 LlmModel = summary.LlmModel,
                 VectorStore = summary.VectorStore,
+                ChunkingStrategy = summary.ChunkingStrategy,
                 QuestionCount = summary.QuestionCount,
                 AvgFaithfulness = summary.AvgFaithfulness,
                 AvgAnswerRelevancy = summary.AvgAnswerRelevancy,
@@ -175,6 +186,7 @@ public sealed class RagasEvaluationController : Controller
             Results = result.Results.Select(item => new RagasResultDetailItem
             {
                 EmbeddingModel = item.EmbeddingModel,
+                ChunkingStrategy = item.ChunkingStrategy,
                 Question = item.Question,
                 GroundTruthAnswer = item.GroundTruthAnswer,
                 GeneratedAnswer = item.GeneratedAnswer,
@@ -195,4 +207,6 @@ public sealed class RunEvaluationRequest
     public int SubjectId { get; set; }
 
     public List<string> EmbeddingModels { get; set; } = new();
+
+    public List<string> ChunkingStrategies { get; set; } = new();
 }

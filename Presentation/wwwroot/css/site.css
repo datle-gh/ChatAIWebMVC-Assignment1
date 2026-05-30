@@ -965,32 +965,120 @@ a:hover {
 }
 
 .chat-composer {
-  padding: 18px 32px 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--surface-lowest) 20%);
+  padding: 16px 28px 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--surface-lowest) 28%);
+  flex-shrink: 0;
 }
 
 .chat-composer-box {
+  position: relative;
   display: flex;
   gap: 10px;
   align-items: flex-end;
-  max-width: 900px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 8px;
+  padding: 10px 10px 10px 16px;
   background: var(--surface-lowest);
-  border: 1px solid var(--outline-variant);
-  border-radius: 18px;
-  box-shadow: var(--shadow-indigo);
+  border: 1.5px solid var(--outline-variant);
+  border-radius: 22px;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.06), 0 1px 4px rgba(0,0,0,0.04);
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+
+/* Glow ring animation on focus */
+@keyframes composer-glow {
+  0%   { box-shadow: 0 0 0 3px rgba(79,70,229,0.10), 0 6px 24px rgba(79,70,229,0.08); }
+  50%  { box-shadow: 0 0 0 5px rgba(79,70,229,0.16), 0 8px 28px rgba(79,70,229,0.13); }
+  100% { box-shadow: 0 0 0 3px rgba(79,70,229,0.10), 0 6px 24px rgba(79,70,229,0.08); }
+}
+
+.chat-composer-box:focus-within {
+  border-color: var(--primary-container);
+  animation: composer-glow 2.4s ease-in-out infinite;
 }
 
 .chat-composer textarea {
-  min-height: 48px;
-  max-height: 140px;
+  flex: 1;
+  min-height: 26px;
+  max-height: 160px;
+  padding: 4px 0;
   border: 0;
   resize: none;
+  background: transparent;
+  font-size: 0.97rem;
+  line-height: 1.55;
+  color: var(--on-surface);
+}
+
+.chat-composer textarea::placeholder {
+  color: var(--outline);
+  text-align: center;
+  transition: color 200ms ease;
+}
+
+.chat-composer textarea:focus::placeholder {
+  color: transparent;
 }
 
 .chat-composer textarea:focus {
   box-shadow: none;
+  outline: none;
+}
+
+/* Send button — animated */
+#sendButton {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--primary-container);
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  overflow: visible;
+  transition: background 180ms ease, transform 120ms ease, box-shadow 180ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#sendButton:hover {
+  background: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+}
+
+#sendButton:active {
+  transform: scale(0.92);
+}
+
+/* Pulse ring on send button */
+#sendButton::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 16px;
+  border: 2px solid rgba(79, 70, 229, 0.35);
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+#sendButton:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@keyframes send-pulse {
+  0%   { transform: scale(1);    opacity: 0.6; }
+  60%  { transform: scale(1.18); opacity: 0; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+#sendButton.sending::before {
+  animation: send-pulse 0.8s ease-out forwards;
 }
 
 @media (max-width: 991.98px) {

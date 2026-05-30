@@ -23,6 +23,7 @@ public sealed class RagasQuestionsViewModel
     public int SubjectId { get; set; }
     public string SubjectName { get; set; } = string.Empty;
     public List<RagasEmbeddingModelOption> EmbeddingModels { get; set; } = new();
+    public List<RagasChunkingStrategyOption> ChunkingStrategies { get; set; } = new();
     public List<RagasQuestionItem> Questions { get; set; } = new();
 }
 
@@ -31,6 +32,14 @@ public sealed class RagasEmbeddingModelOption
     public string Key { get; set; } = string.Empty;
     public string Provider { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
+    public bool IsSelected { get; set; }
+}
+
+public sealed class RagasChunkingStrategyOption
+{
+    public string Key { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
     public bool IsSelected { get; set; }
 }
 
@@ -89,6 +98,7 @@ public sealed class RagasModelSummaryItem
     public string EmbeddingModel { get; set; } = string.Empty;
     public string? LlmModel { get; set; }
     public string? VectorStore { get; set; }
+    public string ChunkingStrategy { get; set; } = string.Empty;
     public int QuestionCount { get; set; }
     public decimal AvgFaithfulness { get; set; }
     public decimal AvgAnswerRelevancy { get; set; }
@@ -100,6 +110,7 @@ public sealed class RagasModelSummaryItem
 public sealed class RagasResultDetailItem
 {
     public string EmbeddingModel { get; set; } = string.Empty;
+    public string ChunkingStrategy { get; set; } = string.Empty;
     public string Question { get; set; } = string.Empty;
     public string? GroundTruthAnswer { get; set; }
     public string? GeneratedAnswer { get; set; }

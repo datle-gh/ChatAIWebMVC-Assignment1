@@ -5,6 +5,8 @@ namespace Presentation.Models;
 public sealed class SubjectPageViewModel
 {
     public IReadOnlyList<SubjectViewModel> Subjects { get; set; } = [];
+
+    public string SelectedFilter { get; set; } = "enrolled";
 }
 
 public sealed class SubjectViewModel
@@ -18,7 +20,12 @@ public sealed class SubjectViewModel
     public int StudentCount { get; set; }
     public int TeacherCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    public int? CreatedById { get; set; }
+    public string? CreatedByName { get; set; }
+    public bool IsTeacherEnrolled { get; set; }
+    public bool CanManage { get; set; }
     public IReadOnlyList<string> TeacherNames { get; set; } = [];
+    public IReadOnlyList<string> MemberNames { get; set; } = [];
 }
 
 public sealed class CreateSubjectViewModel

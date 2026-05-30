@@ -17,6 +17,7 @@ public sealed class SubjectRepository : ISubjectRepository
         return await _context.Subjects
             .AsNoTracking()
             .Include(s => s.Documents)
+            .Include(s => s.CreatedByNavigation)
             .Include(s => s.SubjectEnrollments)
                 .ThenInclude(e => e.User)
             .Include(s => s.ChatSessions)
@@ -32,6 +33,7 @@ public sealed class SubjectRepository : ISubjectRepository
         return await _context.Subjects
             .AsNoTracking()
             .Include(s => s.Documents)
+            .Include(s => s.CreatedByNavigation)
             .Include(s => s.SubjectEnrollments)
             .Include(s => s.ChatSessions)
             .Where(subject =>
@@ -48,13 +50,23 @@ public sealed class SubjectRepository : ISubjectRepository
     {
         return await _context.Subjects
             .Include(s => s.Documents)
+            .Include(s => s.CreatedByNavigation)
             .Include(s => s.SubjectEnrollments)
+                .ThenInclude(e => e.User)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
     public async Task AddAsync(Subject subject, CancellationToken cancellationToken = default)
     {
         await _context.Subjects.AddAsync(subject, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AddEnrollmentAsync(
+        SubjectEnrollment enrollment,
+        CancellationToken cancellationToken = default)
+    {
+        await _context.SubjectEnrollments.AddAsync(enrollment, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
     }
 

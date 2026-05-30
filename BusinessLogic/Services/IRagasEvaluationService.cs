@@ -11,6 +11,8 @@ public interface IRagasEvaluationService
         int subjectId,
         CancellationToken cancellationToken = default);
 
+    IReadOnlyList<BenchmarkChunkingStrategyDto> GetChunkingStrategies();
+
     Task<OperationResult> AddQuestionAsync(
         int subjectId,
         string question,
@@ -36,6 +38,7 @@ public interface IRagasEvaluationService
     Task<RagasRunSummaryDto?> RunEvaluationAsync(
         int subjectId,
         IReadOnlyList<string>? embeddingModels = null,
+        IReadOnlyList<string>? chunkingStrategies = null,
         CancellationToken cancellationToken = default);
 
     Task<RagasRunSummaryDto?> GetLatestRunAsync(

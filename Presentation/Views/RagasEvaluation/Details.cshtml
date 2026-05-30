@@ -103,7 +103,7 @@
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white py-3 border-bottom">
-            <h6 class="m-0 font-weight-bold text-primary">So sanh embedding model</h6>
+            <h6 class="m-0 font-weight-bold text-primary">So sanh embedding model va strategy</h6>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -111,6 +111,7 @@
                     <thead class="table-light">
                         <tr>
                             <th class="px-4 py-3 border-0">Embedding</th>
+                            <th class="py-3 border-0">Strategy</th>
                             <th class="py-3 border-0">Vector store</th>
                             <th class="py-3 border-0 text-center">Overall</th>
                             <th class="py-3 border-0 text-center">Faithfulness</th>
@@ -124,6 +125,7 @@
                         {
                             <tr>
                                 <td class="px-4 py-3 fw-semibold">@summary.EmbeddingModel</td>
+                                <td class="py-3">@summary.ChunkingStrategy</td>
                                 <td class="py-3">@summary.VectorStore</td>
                                 <td class="py-3 text-center fw-bold @GetScoreColor(summary.AvgOverallScore)">@summary.AvgOverallScore.ToString("P1")</td>
                                 <td class="py-3 text-center">@summary.AvgFaithfulness.ToString("P1")</td>
@@ -150,7 +152,7 @@
                     <h2 class="accordion-header" id="heading_@idx">
                         <button class="accordion-button @(idx == 0 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@idx" aria-expanded="@(idx == 0 ? "true" : "false")" aria-controls="collapse_@idx">
                             <div class="d-flex justify-content-between w-100 align-items-center pe-3">
-                                <span class="fw-semibold">@r.Question <span class="badge bg-light text-dark border ms-2">@r.EmbeddingModel</span></span>
+                                <span class="fw-semibold">@r.Question <span class="badge bg-light text-dark border ms-2">@r.EmbeddingModel</span><span class="badge bg-light text-dark border ms-2">@r.ChunkingStrategy</span></span>
                                 <span class="badge @(r.OverallScore >= 0.8m ? "bg-success" : (r.OverallScore >= 0.5m ? "bg-warning text-dark" : "bg-danger")) rounded-pill px-3">
                                     @(r.OverallScore?.ToString("P1") ?? "N/A")
                                 </span>

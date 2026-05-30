@@ -42,7 +42,7 @@
             }
             @foreach (var subject in Model.Subjects)
             {
-                var docCount = Model.Documents.Count(d => d.SubjectId == subject.Id);
+                var docCount = Model.Documents.Count(d => d.SubjectId == subject.Id && d.Status == DocumentStatus.Indexed);
                 var iconBg   = iconBgs[idx % iconBgs.Length];
                 var iconColor= iconColors[idx % iconColors.Length];
                 var icon     = icons[idx % icons.Length];
@@ -90,13 +90,10 @@ else
             <h1 class="page-title">@(selectedSubject?.SubjectName ?? "Tài liệu môn học")</h1>
             <p class="page-subtitle">Quản lý và tra cứu tài liệu học tập, bài giảng và tài nguyên liên quan đến môn học.</p>
         </div>
-        @if (!isStudent)
-        {
-            <a class="btn btn-primary px-4 align-self-start" asp-action="Upload">
-                <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle;margin-right:4px" aria-hidden="true">upload_file</span>
-                Tải tài liệu lên
-            </a>
-        }
+        <a class="btn btn-primary px-4 align-self-start" asp-action="Upload" asp-route-subjectId="@Model.SubjectId">
+            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle;margin-right:4px" aria-hidden="true">upload_file</span>
+            Tải tài liệu lên
+        </a>
     </div>
 
     @* Toolbar / search within subject *@
@@ -143,10 +140,11 @@ else
                 <table class="table doc-detail-table align-middle" id="documentTable">
                     <thead>
                         <tr>
-                            <th style="width:52%">Tên tài liệu</th>
-                            <th style="width:12%">Loại file</th>
-                            <th style="width:18%">Ngày tải lên</th>
-                            <th style="width:18%" class="text-end">Hành động</th>
+                            <th style="width:38%">Tên tài liệu</th>
+                            <th style="width:16%">Người tải lên</th>
+                            <th style="width:10%">Loại file</th>
+                            <th style="width:14%">Ngày tải lên</th>
+                            <th style="width:22%" class="text-end">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -158,8 +156,23 @@ else
                                         <div class="doc-detail-file-icon @GetFileIconClass(doc.FileType)" aria-hidden="true">
                                             <span class="material-symbols-outlined icon-fill">@GetFileIcon(doc.FileType)</span>
                                         </div>
-                                        <span class="doc-detail-filename">@doc.OriginalFileName</span>
+                                        <div class="min-w-0 flex-grow-1">
+                                            <span class="doc-detail-filename">@doc.OriginalFileName</span>
+                                            <div class="doc-verify-progress @(doc.Status == DocumentStatus.Processing ? "" : "d-none") mt-2"
+                                                 data-verify-progress="@doc.Id"
+                                                 data-upload-id="verify-@doc.Id">
+                                                <div class="progress-thin mb-1">
+                                                    <span data-progress-bar style="width:@(doc.Status == DocumentStatus.Processing ? "10%" : "0%")"></span>
+                                                </div>
+                                                <div class="text-muted" data-progress-message style="font-size:0.78rem">
+                                                    @(doc.Status == DocumentStatus.Processing ? "Đang index tài liệu..." : "Đang chờ xử lý...")
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
+                                </td>
+                                <td class="text-muted" style="font-size:0.875rem">
+                                    @(doc.UploadedByName ?? "Không rõ")
                                 </td>
                                 <td class="text-muted" style="font-size:0.875rem">@doc.FileType</td>
                                 <td class="text-muted" style="font-size:0.875rem">
@@ -169,6 +182,22 @@ else
                                     <div class="d-flex justify-content-end gap-1">
                                         @if (!isStudent)
                                         {
+                                            @if (doc.Status is DocumentStatus.Uploaded or DocumentStatus.Failed)
+                                            {
+                                                <button class="doc-row-btn doc-row-btn-primary open-review-modal"
+                                                        type="button"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#documentReviewModal"
+                                                        data-document-id="@doc.Id"
+                                                        data-document-name="@doc.OriginalFileName"
+                                                        data-upload-id="verify-@doc.Id"
+                                                        data-verify-url="@Url.Action("Verify", "Document", new { id = doc.Id, subjectId = Model.SubjectId })"
+                                                        data-reject-url="@Url.Action("Reject", "Document", new { id = doc.Id, subjectId = Model.SubjectId })"
+                                                        title="Duyệt hoặc từ chối tài liệu">
+                                                        <span class="material-symbols-outlined" style="font-size:1rem">verified</span>
+                                                        <span>Duyệt</span>
+                                                    </button>
+                                            }
                                             <button class="doc-row-btn doc-row-btn-primary"
                                                     type="button"
                                                     data-bs-toggle="collapse"
@@ -191,7 +220,7 @@ else
                             @if (!isStudent)
                             {
                                 <tr class="doc-detail-expand-row">
-                                    <td colspan="4" style="padding:0 16px">
+                                    <td colspan="5" style="padding:0 16px">
                                         <div id="doc-detail-@doc.Id" class="collapse">
                                             <div class="doc-detail-panel">
                                                 <div class="row g-4">
@@ -216,7 +245,7 @@ else
                                                             @if (!string.IsNullOrWhiteSpace(doc.ErrorMessage))
                                                             {
                                                                 <dt>Lỗi</dt>
-                                                                <dd class="text-danger">@doc.ErrorMessage</dd>
+                                                                <dd class="text-danger">@SanitizeErrorMessage(doc.ErrorMessage)</dd>
                                                             }
                                                         </dl>
                                                     </div>
@@ -246,6 +275,54 @@ else
                 </table>
             </div>
         }
+    </div>
+}
+
+@if (!isStudent)
+{
+    <div class="modal fade" id="documentReviewModal" tabindex="-1" aria-labelledby="documentReviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content document-review-modal">
+                <div class="modal-header">
+                    <div>
+                        <p class="review-modal-eyebrow mb-1">Kiểm duyệt tài liệu</p>
+                        <h2 class="modal-title fs-5 fw-bold" id="documentReviewModalLabel">Duyệt hoặc từ chối tài liệu</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2 text-muted" style="font-size:0.9rem">Tài liệu đang chờ giảng viên xác nhận:</p>
+                    <div class="review-modal-file mb-3">
+                        <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                        <span id="documentReviewFileName">--</span>
+                    </div>
+                    <div class="alert alert-danger d-none" data-review-error role="alert"></div>
+                    <form id="documentReviewRejectForm" method="post">
+                        @Html.AntiForgeryToken()
+                        <label class="form-label fw-semibold" for="rejectReason">Lý do từ chối</label>
+                        <textarea class="form-control"
+                                  id="rejectReason"
+                                  name="reason"
+                                  rows="3"
+                                  maxlength="500"
+                                  placeholder="Ví dụ: Tài liệu chưa đúng môn học hoặc nội dung chưa đủ rõ."></textarea>
+                        <div class="form-text">Có thể để trống nếu không cần ghi lý do.</div>
+                    </form>
+                    <form id="documentReviewApproveForm" method="post">
+                        @Html.AntiForgeryToken()
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" form="documentReviewRejectForm" class="btn btn-outline-danger" data-review-reject-button>
+                        Từ chối
+                    </button>
+                    <button type="submit" form="documentReviewApproveForm" class="btn btn-primary" data-review-approve-button>
+                        Duyệt và index
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 }
 
@@ -526,6 +603,38 @@ else
         background: var(--surface-high);
     }
 
+    .document-review-modal {
+        border: 0;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 18px 48px rgba(15,23,42,0.18);
+    }
+
+    .review-modal-eyebrow {
+        color: var(--primary-container);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .review-modal-file {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid rgba(199,196,216,0.6);
+        border-radius: var(--radius-sm);
+        background: var(--surface-container);
+        color: var(--on-surface);
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .review-modal-file .material-symbols-outlined {
+        color: var(--primary-container);
+        font-size: 1.2rem;
+    }
+
     .doc-detail-panel {
         margin: 12px 0 16px;
         padding: 20px;
@@ -547,6 +656,266 @@ else
         margin: 2px 0 0;
     }
 </style>
+
+@section Scripts {
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script>
+        (() => {
+            const progressBlocks = Array.from(document.querySelectorAll('[data-verify-progress]'));
+            const reviewButtons = Array.from(document.querySelectorAll('.open-review-modal'));
+            const verifyForms = [];
+            if (progressBlocks.length === 0 && reviewButtons.length === 0) {
+                return;
+            }
+
+            const reviewModal = document.getElementById('documentReviewModal');
+            const approveForm = document.getElementById('documentReviewApproveForm');
+            const rejectForm = document.getElementById('documentReviewRejectForm');
+            const fileNameLabel = document.getElementById('documentReviewFileName');
+            const rejectReason = document.getElementById('rejectReason');
+            const reviewError = document.querySelector('[data-review-error]');
+            const approveButton = document.querySelector('[data-review-approve-button]');
+            const rejectButton = document.querySelector('[data-review-reject-button]');
+
+            let connection;
+            let startPromise;
+            const joinedUploads = new Set();
+
+            async function ensureConnection() {
+                if (!connection) {
+                    connection = new signalR.HubConnectionBuilder()
+                        .withUrl('/hubs/upload-progress')
+                        .withAutomaticReconnect()
+                        .build();
+                    connection.on('UploadProgressUpdated', updateProgress);
+                }
+
+                if (!startPromise) {
+                    startPromise = connection.start();
+                }
+
+                await startPromise;
+            }
+
+            async function joinUpload(uploadId) {
+                if (!uploadId || joinedUploads.has(uploadId)) {
+                    return;
+                }
+
+                await ensureConnection();
+                await connection.invoke('JoinUpload', uploadId);
+                joinedUploads.add(uploadId);
+            }
+
+            function getProgressBlock(documentId) {
+                return document.querySelector(`[data-verify-progress="${documentId}"]`);
+            }
+
+            function setProgress(documentId, percent, message, isFailed, isCompleted) {
+                const block = getProgressBlock(documentId);
+                if (!block) {
+                    return;
+                }
+
+                block.classList.remove('d-none');
+                const bar = block.querySelector('[data-progress-bar]');
+                const label = block.querySelector('[data-progress-message]');
+                if (bar) {
+                    bar.style.width = `${Math.max(0, Math.min(100, percent || 0))}%`;
+                }
+                if (label) {
+                    label.textContent = message || 'Đang index tài liệu...';
+                    label.classList.toggle('text-danger', Boolean(isFailed));
+                    label.classList.toggle('text-success', Boolean(isCompleted));
+                    label.classList.toggle('text-muted', !isFailed && !isCompleted);
+                }
+            }
+
+            function updateProgress(progress) {
+                const uploadId = progress.uploadId ?? progress.UploadId ?? '';
+                const documentId = Number.parseInt(uploadId.replace('verify-', ''), 10);
+                if (!Number.isFinite(documentId)) {
+                    return;
+                }
+
+                setProgress(
+                    documentId,
+                    progress.percent ?? progress.Percent ?? 0,
+                    progress.message ?? progress.Message ?? '',
+                    progress.isFailed ?? progress.IsFailed,
+                    progress.isCompleted ?? progress.IsCompleted);
+            }
+
+            progressBlocks.forEach(block => {
+                joinUpload(block.dataset.uploadId).catch(() => {});
+            });
+
+            function showReviewError(message) {
+                if (!reviewError) {
+                    return;
+                }
+
+                reviewError.textContent = message || 'Không thể xử lý tài liệu.';
+                reviewError.classList.remove('d-none');
+            }
+
+            function clearReviewError() {
+                if (reviewError) {
+                    reviewError.textContent = '';
+                    reviewError.classList.add('d-none');
+                }
+            }
+
+            function setReviewButtonsDisabled(isDisabled) {
+                if (approveButton) {
+                    approveButton.disabled = isDisabled;
+                }
+                if (rejectButton) {
+                    rejectButton.disabled = isDisabled;
+                }
+            }
+
+            reviewButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    clearReviewError();
+                    setReviewButtonsDisabled(false);
+
+                    if (approveButton) {
+                        approveButton.textContent = 'Duyệt và index';
+                    }
+                    if (rejectButton) {
+                        rejectButton.textContent = 'Từ chối';
+                    }
+                    if (fileNameLabel) {
+                        fileNameLabel.textContent = button.dataset.documentName || '--';
+                    }
+                    if (rejectReason) {
+                        rejectReason.value = '';
+                    }
+                    if (approveForm) {
+                        approveForm.action = button.dataset.verifyUrl || '';
+                        approveForm.dataset.documentId = button.dataset.documentId || '';
+                        approveForm.dataset.uploadId = button.dataset.uploadId || '';
+                    }
+                    if (rejectForm) {
+                        rejectForm.action = button.dataset.rejectUrl || '';
+                        rejectForm.dataset.documentId = button.dataset.documentId || '';
+                    }
+                });
+            });
+
+            if (approveForm) {
+                approveForm.addEventListener('submit', async event => {
+                    event.preventDefault();
+
+                    const documentId = approveForm.dataset.documentId;
+                    const uploadId = approveForm.dataset.uploadId;
+                    await joinUpload(uploadId);
+                    setProgress(Number.parseInt(documentId, 10), 5, 'Đang gửi yêu cầu duyệt tài liệu...', false, false);
+                    setReviewButtonsDisabled(true);
+                    if (approveButton) {
+                        approveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang duyệt';
+                    }
+
+                    try {
+                        const response = await fetch(approveForm.action, {
+                            method: 'POST',
+                            body: new FormData(approveForm),
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const payload = await response.json();
+                        if (!response.ok || !payload.succeeded) {
+                            throw new Error(payload.message || 'Không thể duyệt tài liệu.');
+                        }
+
+                        if (reviewModal && window.bootstrap) {
+                            bootstrap.Modal.getOrCreateInstance(reviewModal).hide();
+                        }
+                        setProgress(Number.parseInt(documentId, 10), 100, payload.message || 'Tài liệu đã được index.', false, true);
+                        window.setTimeout(() => window.location.reload(), 900);
+                    } catch (error) {
+                        showReviewError(error.message || 'Duyệt tài liệu thất bại.');
+                        setProgress(Number.parseInt(documentId, 10), 100, error.message || 'Duyệt tài liệu thất bại.', true, false);
+                        setReviewButtonsDisabled(false);
+                        if (approveButton) {
+                            approveButton.textContent = 'Duyệt và index';
+                        }
+                    }
+                });
+            }
+
+            if (rejectForm) {
+                rejectForm.addEventListener('submit', async event => {
+                    event.preventDefault();
+
+                    setReviewButtonsDisabled(true);
+                    if (rejectButton) {
+                        rejectButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang từ chối';
+                    }
+
+                    try {
+                        const response = await fetch(rejectForm.action, {
+                            method: 'POST',
+                            body: new FormData(rejectForm),
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const payload = await response.json();
+                        if (!response.ok || !payload.succeeded) {
+                            throw new Error(payload.message || 'Không thể từ chối tài liệu.');
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        showReviewError(error.message || 'Từ chối tài liệu thất bại.');
+                        setReviewButtonsDisabled(false);
+                        if (rejectButton) {
+                            rejectButton.textContent = 'Từ chối';
+                        }
+                    }
+                });
+            }
+
+            verifyForms.forEach(form => {
+                form.addEventListener('submit', async event => {
+                    event.preventDefault();
+
+                    const documentId = form.dataset.documentId;
+                    const uploadId = form.dataset.uploadId;
+                    const button = form.querySelector('button[type="submit"]');
+
+                    await joinUpload(uploadId);
+                    setProgress(Number.parseInt(documentId, 10), 5, 'Đang gửi yêu cầu duyệt tài liệu...', false, false);
+
+                    if (button) {
+                        button.disabled = true;
+                        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Đang duyệt</span>';
+                    }
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: new FormData(form),
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const payload = await response.json();
+                        if (!response.ok || !payload.succeeded) {
+                            throw new Error(payload.message || 'Không thể duyệt tài liệu.');
+                        }
+
+                        setProgress(Number.parseInt(documentId, 10), 100, payload.message || 'Tài liệu đã được index.', false, true);
+                        window.setTimeout(() => window.location.reload(), 900);
+                    } catch (error) {
+                        setProgress(Number.parseInt(documentId, 10), 100, error.message || 'Duyệt tài liệu thất bại.', true, false);
+                        if (button) {
+                            button.disabled = false;
+                            button.innerHTML = '<span class="material-symbols-outlined" style="font-size:1rem">verified</span><span>Duyệt</span>';
+                        }
+                    }
+                });
+            });
+        })();
+    </script>
+}
 
 @functions {
     private static string GetFileIcon(string fileType) => fileType.ToUpperInvariant() switch
@@ -571,6 +940,7 @@ else
         DocumentStatus.Processing => "status-processing",
         DocumentStatus.Uploaded   => "status-uploaded",
         DocumentStatus.Failed     => "status-failed",
+        DocumentStatus.Rejected   => "status-failed",
         _                         => "status-uploaded"
     };
 
@@ -578,8 +948,9 @@ else
     {
         DocumentStatus.Indexed    => "Đã Index",
         DocumentStatus.Processing => "Đang Index",
-        DocumentStatus.Uploaded   => "Đã tải lên",
+        DocumentStatus.Uploaded   => "Chờ duyệt",
         DocumentStatus.Failed     => "Lỗi",
+        DocumentStatus.Rejected   => "Đã từ chối",
         _                         => status.ToString()
     };
 
@@ -590,5 +961,26 @@ else
         var kb = bytes.Value / 1024d;
         if (kb < 1024) return $"{kb:0.#} KB";
         return $"{kb / 1024d:0.#} MB";
+    }
+
+    private static string SanitizeErrorMessage(string message)
+    {
+        return IsTechnicalError(message)
+            ? "Có lỗi khi xử lý tài liệu. Vui lòng duyệt lại hoặc tải lại tài liệu."
+            : message;
+    }
+
+    private static bool IsTechnicalError(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        return message.Contains("entity type", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("same key value", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("DbContext", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("System.", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("Microsoft.", StringComparison.OrdinalIgnoreCase);
     }
 }

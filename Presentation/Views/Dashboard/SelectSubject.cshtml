@@ -59,6 +59,47 @@
         </div>
     </div>
 
+    @if (TempData["SuccessMessage"] is string successMsg)
+    {
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl border text-sm mb-5"
+             style="background:#e2dfff;border-color:#c3c0ff;color:#3525cd;font-family:'Inter',sans-serif">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            @successMsg
+        </div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMsg)
+    {
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl border text-sm mb-5"
+             style="background:#ffdad6;border-color:#ffb4ab;color:#ba1a1a;font-family:'Inter',sans-serif">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            @SanitizeErrorMessage(errorMsg)
+        </div>
+    }
+
+    @if (Model.ShowTeacherFilters)
+    {
+        <div class="flex flex-wrap items-center gap-2 mb-6" style="font-family:'Inter',sans-serif">
+            <a asp-controller="Dashboard" asp-action="SelectSubject" asp-route-filter="enrolled"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all @(Model.SelectedFilter == "enrolled" ? "bg-primary-container text-white border-primary-container shadow-sm" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary-container hover:text-primary")"
+               style="text-decoration:none">
+                <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+                Đang tham gia
+            </a>
+            <a asp-controller="Dashboard" asp-action="SelectSubject" asp-route-filter="created"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all @(Model.SelectedFilter == "created" ? "bg-primary-container text-white border-primary-container shadow-sm" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary-container hover:text-primary")"
+               style="text-decoration:none">
+                <span class="material-symbols-outlined text-[18px]">edit_square</span>
+                Đã tạo
+            </a>
+            <a asp-controller="Dashboard" asp-action="SelectSubject" asp-route-filter="all"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all @(Model.SelectedFilter == "all" ? "bg-primary-container text-white border-primary-container shadow-sm" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary-container hover:text-primary")"
+               style="text-decoration:none">
+                <span class="material-symbols-outlined text-[18px]">apps</span>
+                Tất cả môn học
+            </a>
+        </div>
+    }
+
     @if (!Model.Subjects.Any())
     {
         <div class="bg-surface-container-lowest rounded-2xl p-16 text-center border border-surface-container-high">
@@ -102,12 +143,28 @@
                             <span class="material-symbols-outlined text-[18px]" style="color:#c3c0ff">library_books</span>
                             <span>@subject.IndexedDocumentCount tài liệu đã index</span>
                         </div>
+                        @if (User.IsInRole("Student") && !subject.IsEnrolled)
+                        {
+                            <form asp-controller="Dashboard" asp-action="JoinSubject" method="post" class="mt-auto">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="subjectId" value="@subject.Id" />
+                                <button type="submit"
+                                        class="w-full flex justify-center items-center gap-2 py-3 rounded-xl font-semibold text-white transition-all duration-200 active:scale-95 shadow-sm border-0"
+                                        style="background:#4f46e5;font-family:'Inter',sans-serif">
+                                    <span class="material-symbols-outlined text-[18px]">person_add</span>
+                                    Tham gia
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
                         <a asp-controller="Chat" asp-action="Index" asp-route-subjectId="@subject.Id"
                            class="mt-auto w-full flex justify-center items-center gap-2 py-3 rounded-xl font-semibold text-white transition-all duration-200 active:scale-95 shadow-sm"
                            style="background:#4f46e5;font-family:'Inter',sans-serif;text-decoration:none">
                             <span class="material-symbols-outlined text-[18px]">forum</span>
                             Hỏi chatbot
                         </a>
+                        }
                     }
                     else
                     {
@@ -151,4 +208,27 @@
             if (noResults) noResults.classList.toggle('hidden', visible > 0);
         }
     </script>
+}
+
+@functions {
+    private static string SanitizeErrorMessage(string message)
+    {
+        return IsTechnicalError(message)
+            ? "Có lỗi khi xử lý tài liệu. Vui lòng thử lại hoặc liên hệ giảng viên."
+            : message;
+    }
+
+    private static bool IsTechnicalError(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        return message.Contains("entity type", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("same key value", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("DbContext", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("System.", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("Microsoft.", StringComparison.OrdinalIgnoreCase);
+    }
 }

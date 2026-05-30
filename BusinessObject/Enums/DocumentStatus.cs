@@ -5,5 +5,6 @@ public enum DocumentStatus
     Uploaded,
     Processing,
     Indexed,
-    Failed
+    Failed,
+    Rejected
 }

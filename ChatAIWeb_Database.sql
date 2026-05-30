@@ -404,15 +404,15 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Subjects WHERE SubjectCode = N'CS101')
 BEGIN
     INSERT INTO dbo.Subjects (SubjectCode, SubjectName, Description, CreatedBy)
     VALUES
-    (N'CS101',   N'Nhập môn lập trình',          N'Tài liệu bài giảng nhập môn lập trình dùng để demo chatbot RAG.',          1),
-    (N'DB201',   N'Cơ sở dữ liệu',               N'Tài liệu môn cơ sở dữ liệu, SQL, ERD và chuẩn hóa dữ liệu.',               1),
-    (N'AI301',   N'Trí tuệ nhân tạo',            N'Tài liệu môn trí tuệ nhân tạo, machine learning và RAG.',                  1),
-    (N'PRN222',  N'Lập trình ASP.NET Core MVC',  N'Tài liệu môn PRN222: ASP.NET Core MVC, EF Core, SignalR, kiến trúc 3-lớp.',1),
-    (N'PRO192',  N'Lập trình hướng đối tượng',   N'Tài liệu môn lập trình hướng đối tượng với C#: lớp, kế thừa, đa hình.',    1),
-    (N'CSI104',  N'Nhập môn ngành công nghệ thông tin', N'Tài liệu giới thiệu ngành CNTT, các nhánh chuyên môn và kỹ năng nền tảng.', 1),
-    (N'SWE201',  N'Nhập môn kỹ thuật phần mềm',  N'Tài liệu môn kỹ thuật phần mềm: vòng đời SDLC, Agile, kiểm thử, quản lý cấu hình.', 1),
-    (N'VNR202',  N'Lịch sử Đảng Cộng sản Việt Nam', N'Tài liệu môn Lịch sử Đảng: quá trình thành lập, các kỳ Đại hội và đường lối lãnh đạo cách mạng Việt Nam.', 1),
-    (N'NWC203',  N'Mạng máy tính',                N'Tài liệu môn Mạng máy tính: mô hình OSI/TCP-IP, định tuyến, giao thức tầng ứng dụng và bảo mật mạng.', 1);
+    (N'CS101',   N'Nhập môn lập trình',          N'Tài liệu bài giảng nhập môn lập trình dùng để demo chatbot RAG.',          4),
+    (N'DB201',   N'Cơ sở dữ liệu',               N'Tài liệu môn cơ sở dữ liệu, SQL, ERD và chuẩn hóa dữ liệu.',               5),
+    (N'AI301',   N'Trí tuệ nhân tạo',            N'Tài liệu môn trí tuệ nhân tạo, machine learning và RAG.',                  6),
+    (N'PRN222',  N'Lập trình ASP.NET Core MVC',  N'Tài liệu môn PRN222: ASP.NET Core MVC, EF Core, SignalR, kiến trúc 3-lớp.',14),
+    (N'PRO192',  N'Lập trình hướng đối tượng',   N'Tài liệu môn lập trình hướng đối tượng với C#: lớp, kế thừa, đa hình.',    15),
+    (N'CSI104',  N'Nhập môn ngành công nghệ thông tin', N'Tài liệu giới thiệu ngành CNTT, các nhánh chuyên môn và kỹ năng nền tảng.', 17),
+    (N'SWE201',  N'Nhập môn kỹ thuật phần mềm',  N'Tài liệu môn kỹ thuật phần mềm: vòng đời SDLC, Agile, kiểm thử, quản lý cấu hình.', 18),
+    (N'VNR202',  N'Lịch sử Đảng Cộng sản Việt Nam', N'Tài liệu môn Lịch sử Đảng: quá trình thành lập, các kỳ Đại hội và đường lối lãnh đạo cách mạng Việt Nam.', 2),
+    (N'NWC203',  N'Mạng máy tính',                N'Tài liệu môn Mạng máy tính: mô hình OSI/TCP-IP, định tuyến, giao thức tầng ứng dụng và bảo mật mạng.', 6);
 END
 GO
 

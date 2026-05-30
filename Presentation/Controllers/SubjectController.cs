@@ -18,12 +18,19 @@ public sealed class SubjectController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(string? filter, CancellationToken cancellationToken)
     {
-        var subjects = await _subjectService.GetAllSubjectsAsync(cancellationToken);
+        var currentUserRole = GetCurrentUserRole();
+        var selectedFilter = ResolveSubjectFilter(filter, currentUserRole);
+        var subjects = await _subjectService.GetManagementSubjectsAsync(
+            GetCurrentUserId(),
+            currentUserRole,
+            selectedFilter,
+            cancellationToken);
 
         var model = new SubjectPageViewModel
         {
+            SelectedFilter = selectedFilter,
             Subjects = subjects
                 .Select(s => new SubjectViewModel
                 {
@@ -36,7 +43,12 @@ public sealed class SubjectController : Controller
                     StudentCount = s.StudentCount,
                     TeacherCount = s.TeacherCount,
                     CreatedAt = s.CreatedAt,
-                    TeacherNames = s.TeacherNames
+                    CreatedById = s.CreatedById,
+                    CreatedByName = s.CreatedByName,
+                    IsTeacherEnrolled = s.IsTeacherEnrolled,
+                    CanManage = s.CanManage,
+                    TeacherNames = s.TeacherNames,
+                    MemberNames = s.MemberNames
                 })
                 .ToList()
         };
@@ -83,6 +95,16 @@ public sealed class SubjectController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
+        if (!await _subjectService.CanManageSubjectAsync(
+                id,
+                GetCurrentUserId(),
+                GetCurrentUserRole(),
+                cancellationToken))
+        {
+            TempData["ErrorMessage"] = "Bạn chỉ có quyền chỉnh sửa môn học do bạn tạo.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var subject = await _subjectService.GetSubjectByIdAsync(id, cancellationToken);
         if (subject is null)
         {
@@ -104,6 +126,16 @@ public sealed class SubjectController : Controller
         EditSubjectViewModel model,
         CancellationToken cancellationToken)
     {
+        if (!await _subjectService.CanManageSubjectAsync(
+                model.Id,
+                GetCurrentUserId(),
+                GetCurrentUserRole(),
+                cancellationToken))
+        {
+            TempData["ErrorMessage"] = "Bạn chỉ có quyền chỉnh sửa môn học do bạn tạo.";
+            return RedirectToAction(nameof(Index));
+        }
+
         if (!ModelState.IsValid)
         {
             return View(model);
@@ -131,6 +163,16 @@ public sealed class SubjectController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
+        if (!await _subjectService.CanManageSubjectAsync(
+                id,
+                GetCurrentUserId(),
+                GetCurrentUserRole(),
+                cancellationToken))
+        {
+            TempData["ErrorMessage"] = "Bạn chỉ có quyền xóa môn học do bạn tạo.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var result = await _subjectService.DeleteSubjectAsync(id, cancellationToken);
         TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Message;
         return RedirectToAction(nameof(Index));
@@ -140,5 +182,32 @@ public sealed class SubjectController : Controller
     {
         var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return int.TryParse(value, out var userId) ? userId : 0;
+    }
+
+    private string? GetCurrentUserRole()
+    {
+        return User.FindFirstValue(ClaimTypes.Role);
+    }
+
+    private static string ResolveSubjectFilter(string? filter, string? currentUserRole)
+    {
+        if (string.Equals(filter, "created", StringComparison.OrdinalIgnoreCase))
+        {
+            return "created";
+        }
+
+        if (string.Equals(filter, "enrolled", StringComparison.OrdinalIgnoreCase))
+        {
+            return "enrolled";
+        }
+
+        if (string.Equals(filter, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            return "all";
+        }
+
+        return string.Equals(currentUserRole, "Teacher", StringComparison.OrdinalIgnoreCase)
+            ? "enrolled"
+            : "all";
     }
 }

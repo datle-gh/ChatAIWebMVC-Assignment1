@@ -152,23 +152,24 @@
 
             @* Composer — fixed at bottom *@
             <div class="chat-composer" style="flex-shrink:0">
-                <div class="chat-composer-box">
+                <div class="chat-composer-box" id="composerBox">
                     <label asp-for="Ask.Question" class="visually-hidden"></label>
                     <textarea asp-for="Ask.Question"
                               class="form-control"
                               rows="1"
                               id="questionInput"
-                              placeholder="Đặt câu hỏi về tài liệu môn học..."></textarea>
+                              placeholder="Đặt câu hỏi về tài liệu môn học..."
+                              autocomplete="off"
+                              spellcheck="false"></textarea>
                     <button type="submit"
-                            class="btn btn-primary px-3 d-flex align-items-center justify-content-center"
                             id="sendButton"
-                            aria-label="Gửi câu hỏi"
-                            style="min-height:44px;border-radius:12px;">
-                        <span class="material-symbols-outlined icon-fill" aria-hidden="true" style="font-size: 1.1rem;">send</span>
+                            aria-label="Gửi câu hỏi">
+                        <span class="material-symbols-outlined icon-fill" aria-hidden="true" id="sendIcon" style="font-size:1.15rem">send</span>
                     </button>
                 </div>
                 <span asp-validation-for="Ask.Question" class="text-danger small d-block text-center mt-2"></span>
-                <div class="text-center small text-muted mt-2" id="loadingIndicator" aria-live="polite" role="status">
+                <div class="text-center small text-muted mt-2 d-flex align-items-center justify-content-center gap-2" id="loadingIndicator" aria-live="polite" role="status">
+                    <span class="material-symbols-outlined" style="font-size:0.95rem;opacity:0.55">auto_awesome</span>
                     Insightful AI có thể mắc sai lầm. Hãy kiểm tra lại các thông tin quan trọng.
                 </div>
             </div>
@@ -184,6 +185,7 @@
         const chatMessages = document.getElementById('chatMessages');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const sendButton = document.getElementById('sendButton');
+        const sendIcon = document.getElementById('sendIcon');
         const questionInput = document.getElementById('questionInput');
         const chatSessionIdInput = document.getElementById('chatSessionId');
 
@@ -219,8 +221,12 @@
             const formData = new FormData(chatForm);
             appendMessage('User', question, []);
             resetChatValidation();
-            loadingIndicator.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Đang tạo câu trả lời...';
+
+            // Animate send button
+            sendButton.classList.add('sending');
             sendButton.disabled = true;
+            sendIcon.textContent = 'pending';
+            loadingIndicator.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Đang tạo câu trả lời...';
 
             try {
                 const response = await fetch(chatForm.action, {
@@ -241,8 +247,10 @@
             } catch {
                 appendMessage('Assistant', 'Có lỗi khi gửi câu hỏi.', []);
             } finally {
-                loadingIndicator.textContent = 'Insightful AI có thể mắc sai lầm. Hãy kiểm tra lại các thông tin quan trọng.';
+                sendButton.classList.remove('sending');
                 sendButton.disabled = false;
+                sendIcon.textContent = 'send';
+                loadingIndicator.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.95rem;opacity:0.55">auto_awesome</span> Insightful AI có thể mắc sai lầm. Hãy kiểm tra lại các thông tin quan trọng.';
             }
         });
 

@@ -18,11 +18,34 @@ public interface ISubjectService
     Task<IReadOnlyList<SubjectDto>> GetAllSubjectsAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SubjectDto>> GetManagementSubjectsAsync(
+        int currentUserId,
+        string? currentUserRole,
+        string? filter,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SubjectDto>> GetSelectableSubjectsAsync(
+        int currentUserId,
+        string? currentUserRole,
+        string? filter,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Lấy chi tiết một môn học theo Id.
     /// </summary>
     Task<SubjectDto?> GetSubjectByIdAsync(
         int id,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> CanManageSubjectAsync(
+        int subjectId,
+        int currentUserId,
+        string? currentUserRole,
+        CancellationToken cancellationToken = default);
+
+    Task<OperationResult> EnrollStudentAsync(
+        int subjectId,
+        int studentId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

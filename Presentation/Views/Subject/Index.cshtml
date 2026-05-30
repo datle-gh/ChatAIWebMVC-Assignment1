@@ -87,6 +87,27 @@
         </a>
     </div>
 
+    <div class="flex flex-wrap items-center gap-2" style="font-family:'Inter',sans-serif">
+        <a asp-controller="Subject" asp-action="Index" asp-route-filter="enrolled"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all @(Model.SelectedFilter == "enrolled" ? "bg-primary-container text-white border-primary-container shadow-sm" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary-container hover:text-primary")"
+           style="text-decoration:none">
+            <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+            Đang tham gia
+        </a>
+        <a asp-controller="Subject" asp-action="Index" asp-route-filter="created"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all @(Model.SelectedFilter == "created" ? "bg-primary-container text-white border-primary-container shadow-sm" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary-container hover:text-primary")"
+           style="text-decoration:none">
+            <span class="material-symbols-outlined text-[18px]">edit_square</span>
+            Đã tạo
+        </a>
+        <a asp-controller="Subject" asp-action="Index" asp-route-filter="all"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all @(Model.SelectedFilter == "all" ? "bg-primary-container text-white border-primary-container shadow-sm" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary-container hover:text-primary")"
+           style="text-decoration:none">
+            <span class="material-symbols-outlined text-[18px]">apps</span>
+            Tất cả môn học
+        </a>
+    </div>
+
     @* Success/Error alerts *@
     @if (TempData["SuccessMessage"] is string successMsg)
     {
@@ -128,8 +149,11 @@
             {
                 var chatUrl = Url.Action("Index", "Chat", new { subjectId = subject.Id });
                 string[] avatarPalette = { "#4f46e5", "#0891b2", "#059669", "#d97706", "#dc2626", "#7c3aed" };
-                var displayTeachers = subject.TeacherNames.Take(3).ToList();
-                var hiddenCount = subject.TeacherNames.Count - 3;
+                var displayMembers = subject.MemberNames.Take(5).ToList();
+                var hiddenCount = subject.MemberNames.Count - 5;
+                var creatorName = string.IsNullOrWhiteSpace(subject.CreatedByName)
+                    ? "Chưa rõ người tạo"
+                    : subject.CreatedByName;
 
                 <div class="subject-card bg-surface-container-lowest rounded-2xl p-6 flex flex-col h-full relative overflow-hidden group"
                      onclick="window.location='@chatUrl'"
@@ -166,20 +190,15 @@
                         <div class="space-y-2.5 mb-5 flex-grow" style="font-family:'Inter',sans-serif">
 
                             @* Giảng viên *@
-                            @if (subject.TeacherNames.Any())
-                            {
-                                <div class="flex items-center gap-2 text-on-surface-variant">
-                                    <span class="material-symbols-outlined text-[18px] flex-shrink-0" style="color:#d97706">school</span>
-                                    <span class="text-sm line-clamp-1">@string.Join(", ", subject.TeacherNames)</span>
+                            <div class="flex items-start gap-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[18px] flex-shrink-0 mt-0.5" style="color:#d97706">school</span>
+                                <div class="min-w-0">
+                                    <div class="text-sm line-clamp-1" title="@creatorName">@creatorName</div>
+                                    <div class="text-xs mt-0.5" style="color:rgba(70,69,85,0.72)">
+                                        @subject.TeacherCount Giảng viên
+                                    </div>
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="flex items-center gap-2" style="color:rgba(70,69,85,0.5)">
-                                    <span class="material-symbols-outlined text-[18px] flex-shrink-0">school</span>
-                                    <span class="text-sm italic">Chưa có giảng viên</span>
-                                </div>
-                            }
+                            </div>
 
                             @* Sinh viên *@
                             <div class="flex items-center gap-2 text-on-surface-variant">
@@ -204,17 +223,17 @@
                         <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between mt-auto"
                              onclick="event.stopPropagation()">
 
-                            @* Teacher Avatars *@
+                            @* Member Avatars *@
                             <div class="flex -space-x-2">
-                                @for (int i = 0; i < displayTeachers.Count; i++)
+                                @for (int i = 0; i < displayMembers.Count; i++)
                                 {
-                                    var tName = displayTeachers[i];
-                                    var parts = tName.Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+                                    var memberName = displayMembers[i];
+                                    var parts = memberName.Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
                                     var letter = parts.Length > 0 ? parts[parts.Length - 1][0].ToString().ToUpper() : "?";
                                     var bg = avatarPalette[i % avatarPalette.Length];
                                     <div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs avatar-initial flex-shrink-0"
                                          style="background:@bg"
-                                         title="@tName">
+                                         title="@memberName">
                                         @letter
                                     </div>
                                 }
@@ -226,7 +245,7 @@
                                         +@hiddenCount
                                     </div>
                                 }
-                                @if (!subject.TeacherNames.Any())
+                                @if (!subject.MemberNames.Any())
                                 {
                                     <div class="w-8 h-8 rounded-full border-2 border-dashed border-outline-variant/60 bg-surface-container-low flex items-center justify-center flex-shrink-0"
                                          style="color:rgba(70,69,85,0.4)">
@@ -235,8 +254,10 @@
                                 }
                             </div>
 
-                            @* Edit / Delete *@
-                            <div class="flex items-center gap-1">
+                            @if (subject.CanManage)
+                            {
+                                @* Edit / Delete *@
+                                <div class="flex items-center gap-1">
                                 <a asp-controller="Subject" asp-action="Edit" asp-route-id="@subject.Id"
                                    class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all duration-150"
                                    title="Chỉnh sửa"
@@ -257,7 +278,8 @@
                                         <span class="material-symbols-outlined text-[18px]">delete</span>
                                     </button>
                                 </form>
-                            </div>
+                                </div>
+                            }
                         </div>
 
                     </div>

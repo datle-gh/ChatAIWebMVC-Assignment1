@@ -10,4 +10,10 @@ public sealed record SubjectDto(
     int StudentCount,
     int TeacherCount,
     DateTime CreatedAt,
-    IReadOnlyList<string> TeacherNames);
+    int? CreatedById,
+    string? CreatedByName,
+    bool IsTeacherEnrolled,
+    bool IsStudentEnrolled,
+    bool CanManage,
+    IReadOnlyList<string> TeacherNames,
+    IReadOnlyList<string> MemberNames);

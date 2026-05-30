@@ -14,6 +14,8 @@ public interface ISubjectRepository
 
     Task AddAsync(Subject subject, CancellationToken cancellationToken = default);
 
+    Task AddEnrollmentAsync(SubjectEnrollment enrollment, CancellationToken cancellationToken = default);
+
     Task UpdateAsync(Subject subject, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Subject subject, CancellationToken cancellationToken = default);
