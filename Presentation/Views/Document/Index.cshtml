@@ -209,6 +209,13 @@ else
                                                 <span>Xem</span>
                                             </button>
                                         }
+                                        <a class="doc-row-btn doc-row-btn-download"
+                                           href="@Url.Action("Download", "Document", new { id = doc.Id })"
+                                           title="Tải xuống tài liệu"
+                                           download>
+                                            <span class="material-symbols-outlined" style="font-size:1rem">download</span>
+                                            <span>Tải</span>
+                                        </a>
                                         <button class="doc-row-btn doc-row-btn-secondary" type="button" title="Đặt câu hỏi về tài liệu"
                                                 onclick="window.location='@Url.Action("Index", "Chat", new { subjectId = doc.SubjectId })'">
                                             <span class="material-symbols-outlined" style="font-size:1rem">psychology</span>
@@ -281,46 +288,77 @@ else
 @if (!isStudent)
 {
     <div class="modal fade" id="documentReviewModal" tabindex="-1" aria-labelledby="documentReviewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content document-review-modal">
-                <div class="modal-header">
-                    <div>
-                        <p class="review-modal-eyebrow mb-1">Kiểm duyệt tài liệu</p>
-                        <h2 class="modal-title fs-5 fw-bold" id="documentReviewModalLabel">Duyệt hoặc từ chối tài liệu</h2>
+        <div class="modal-dialog modal-dialog-centered" style="max-width:620px">
+            <div class="modal-content review-modal-card">
+
+                
+                <div class="review-modal-header">
+                    <div class="review-modal-header-icon">
+                        <span class="material-symbols-outlined icon-fill" aria-hidden="true">verified_user</span>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-2 text-muted" style="font-size:0.9rem">Tài liệu đang chờ giảng viên xác nhận:</p>
-                    <div class="review-modal-file mb-3">
-                        <span class="material-symbols-outlined" aria-hidden="true">description</span>
-                        <span id="documentReviewFileName">--</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="review-modal-eyebrow mb-0">Kiểm duyệt tài liệu</p>
+                        <h2 class="review-modal-title" id="documentReviewModalLabel">Xem xét &amp; Phê duyệt</h2>
                     </div>
-                    <div class="alert alert-danger d-none" data-review-error role="alert"></div>
-                    <form id="documentReviewRejectForm" method="post">
-                        @Html.AntiForgeryToken()
-                        <label class="form-label fw-semibold" for="rejectReason">Lý do từ chối</label>
-                        <textarea class="form-control"
-                                  id="rejectReason"
-                                  name="reason"
-                                  rows="3"
-                                  maxlength="500"
-                                  placeholder="Ví dụ: Tài liệu chưa đúng môn học hoặc nội dung chưa đủ rõ."></textarea>
-                        <div class="form-text">Có thể để trống nếu không cần ghi lý do.</div>
-                    </form>
-                    <form id="documentReviewApproveForm" method="post">
-                        @Html.AntiForgeryToken()
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" form="documentReviewRejectForm" class="btn btn-outline-danger" data-review-reject-button>
-                        Từ chối
-                    </button>
-                    <button type="submit" form="documentReviewApproveForm" class="btn btn-primary" data-review-approve-button>
-                        Duyệt và index
+                    <button type="button" class="review-modal-close" data-bs-dismiss="modal" aria-label="Đóng">
+                        <span class="material-symbols-outlined" style="font-size:1.1rem">close</span>
                     </button>
                 </div>
+
+                <div class="modal-body p-0">
+
+                    
+                    <div class="review-modal-file-wrap">
+                        <div class="review-modal-file-chip">
+                            <span class="review-modal-file-icon">
+                                <span class="material-symbols-outlined icon-fill" aria-hidden="true">description</span>
+                            </span>
+                            <span class="review-modal-file-name" id="documentReviewFileName">--</span>
+                        </div>
+                    </div>
+
+                    
+                    <div class="alert alert-danger d-none mx-4 mb-0" data-review-error role="alert"></div>
+
+                    
+                    <div class="review-modal-section">
+                        <div class="review-modal-section-label">
+                            <span class="material-symbols-outlined" aria-hidden="true">block</span>
+                            Lý do từ chối <span class="text-muted fw-normal" style="font-size:0.78rem">(không bắt buộc)</span>
+                        </div>
+                        <form id="documentReviewRejectForm" method="post">
+                            @Html.AntiForgeryToken()
+                            <textarea class="form-control review-modal-textarea"
+                                      id="rejectReason"
+                                      name="reason"
+                                      rows="3"
+                                      maxlength="500"
+                                      placeholder="Ví dụ: Tài liệu chưa đúng môn học hoặc nội dung chưa đủ rõ."></textarea>
+                        </form>
+                        <form id="documentReviewApproveForm" method="post">
+                            @Html.AntiForgeryToken()
+                        </form>
+                    </div>
+
+                </div>
+
+                
+                <div class="review-modal-footer">
+                    <button type="button" class="review-btn review-btn-ghost" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" form="documentReviewRejectForm"
+                                class="review-btn review-btn-reject" data-review-reject-button>
+                            <span class="material-symbols-outlined" style="font-size:1rem">cancel</span>
+                            Từ chối
+                        </button>
+                        <button type="submit" form="documentReviewApproveForm"
+                                class="review-btn review-btn-approve" data-review-approve-button>
+                            <span class="material-symbols-outlined" style="font-size:1rem">verified</span>
+                            Duyệt &amp; Index
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -603,36 +641,221 @@ else
         background: var(--surface-high);
     }
 
-    .document-review-modal {
+
+    /* ── Download button ── */
+    .doc-row-btn-download {
+        color: #0d6efd;
+        background: rgba(13,110,253,0.07);
+        text-decoration: none;
+    }
+
+    .doc-row-btn-download:hover {
+        background: rgba(13,110,253,0.14);
+        color: #0a58ca;
+    }
+
+    /* ── Premium Review Modal ── */
+    .review-modal-card {
         border: 0;
-        border-radius: var(--radius-lg);
-        box-shadow: 0 18px 48px rgba(15,23,42,0.18);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 24px 60px rgba(15,23,42,0.2),
+                    0 4px 12px rgba(79,70,229,0.1);
+    }
+
+    .review-modal-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 24px 28px 20px;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: #fff;
+    }
+
+    .review-modal-header-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: rgba(255,255,255,0.2);
+        border: 1.5px solid rgba(255,255,255,0.3);
+        border-radius: 14px;
+        flex-shrink: 0;
+    }
+
+    .review-modal-header-icon .material-symbols-outlined {
+        font-size: 1.6rem;
+        color: #fff;
+    }
+
+    .review-modal-title {
+        font-family: 'Be Vietnam Pro', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin: 0;
+        color: #fff;
+        line-height: 1.3;
     }
 
     .review-modal-eyebrow {
-        color: var(--primary-container);
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        color: rgba(255,255,255,0.75);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
     }
 
-    .review-modal-file {
-        display: flex;
+    .review-modal-close {
+        display: inline-flex;
         align-items: center;
-        gap: 10px;
-        padding: 12px;
-        border: 1px solid rgba(199,196,216,0.6);
-        border-radius: var(--radius-sm);
-        background: var(--surface-container);
-        color: var(--on-surface);
-        font-weight: 600;
-        overflow-wrap: anywhere;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        margin-left: auto;
+        flex-shrink: 0;
+        background: rgba(255,255,255,0.15);
+        border: 0;
+        border-radius: 8px;
+        color: #fff;
+        cursor: pointer;
+        transition: background 150ms ease;
     }
 
-    .review-modal-file .material-symbols-outlined {
-        color: var(--primary-container);
+    .review-modal-close:hover {
+        background: rgba(255,255,255,0.28);
+    }
+
+    .review-modal-file-wrap {
+        padding: 24px 28px 14px;
+    }
+
+    .review-modal-file-chip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        background: var(--surface-container);
+        border: 1.5px solid rgba(79,70,229,0.15);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .review-modal-file-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        background: rgba(79,70,229,0.1);
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+
+    .review-modal-file-icon .material-symbols-outlined {
         font-size: 1.2rem;
+        color: var(--primary-container);
+    }
+
+    .review-modal-file-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--on-surface);
+        overflow-wrap: anywhere;
+        line-height: 1.4;
+        min-width: 0;
+    }
+
+    .review-modal-section {
+        padding: 4px 28px 22px;
+    }
+
+    .review-modal-section-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--on-surface-variant);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .review-modal-section-label .material-symbols-outlined {
+        font-size: 1rem;
+        color: var(--danger);
+    }
+
+    .review-modal-textarea {
+        border-radius: 10px;
+        border: 1.5px solid var(--outline-variant);
+        font-size: 0.9rem;
+        transition: border-color 180ms ease, box-shadow 180ms ease;
+        resize: vertical;
+    }
+
+    .review-modal-textarea:focus {
+        border-color: var(--primary-container);
+        box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    }
+
+    .review-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 18px 28px;
+        background: var(--surface-container);
+        border-top: 1px solid rgba(199,196,216,0.45);
+    }
+
+    .review-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        border: 0;
+        transition: background 160ms ease, transform 100ms ease, box-shadow 160ms ease;
+    }
+
+    .review-btn:active { transform: scale(0.97); }
+
+    .review-btn-ghost {
+        background: transparent;
+        color: var(--on-surface-variant);
+        border: 1.5px solid var(--outline-variant);
+    }
+
+    .review-btn-ghost:hover { background: var(--surface-low); }
+
+    .review-btn-reject {
+        background: rgba(220,53,69,0.08);
+        color: var(--danger);
+        border: 1.5px solid rgba(220,53,69,0.25);
+    }
+
+    .review-btn-reject:hover {
+        background: rgba(220,53,69,0.15);
+        box-shadow: 0 4px 12px rgba(220,53,69,0.15);
+    }
+
+    .review-btn-approve {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(79,70,229,0.25);
+    }
+
+    .review-btn-approve:hover {
+        background: linear-gradient(135deg, #4338ca, #6d28d9);
+        box-shadow: 0 6px 18px rgba(79,70,229,0.35);
+        transform: translateY(-1px);
     }
 
     .doc-detail-panel {
@@ -654,8 +877,7 @@ else
     .doc-detail-dl dd {
         font-size: 0.875rem;
         margin: 2px 0 0;
-    }
-</style>
+    }</style>
 
 @section Scripts {
     <script src="~/lib/signalr/signalr.min.js"></script>

@@ -352,6 +352,34 @@ public sealed class DocumentService : IDocumentService
             .ToList();
     }
 
+    public async Task<(string FilePath, string OriginalFileName)?> GetDocumentFileAsync(
+        int documentId,
+        int requestingUserId,
+        string? requestingUserRole,
+        CancellationToken cancellationToken = default)
+    {
+        var document = await _documentRepository.GetByIdAsync(documentId, cancellationToken);
+        if (document is null)
+            return null;
+
+        // Admins and teachers of the subject can download any document.
+        // Students can only download indexed documents from their enrolled subjects.
+        var isAdminOrTeacher =
+            string.Equals(requestingUserRole, UserRoleNames.Admin, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(requestingUserRole, UserRoleNames.Teacher, StringComparison.OrdinalIgnoreCase);
+
+        if (!isAdminOrTeacher)
+        {
+            if (document.Status != DocumentStatus.Indexed)
+                return null;
+        }
+
+        if (!System.IO.File.Exists(document.FilePath))
+            return null;
+
+        return (document.FilePath, document.OriginalFileName);
+    }
+
     private static IReadOnlyList<Subject> FilterDocumentLibrarySubjects(
         IReadOnlyList<Subject> subjects,
         int? currentUserId,

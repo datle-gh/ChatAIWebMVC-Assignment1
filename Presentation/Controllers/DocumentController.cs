@@ -193,6 +193,39 @@ public sealed class DocumentController : Controller
         return RedirectToAction(nameof(Index), new { subjectId });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Download(int id, CancellationToken cancellationToken)
+    {
+        var file = await _documentService.GetDocumentFileAsync(
+            id,
+            GetCurrentUserId(),
+            User.FindFirstValue(ClaimTypes.Role),
+            cancellationToken);
+
+        if (file is null)
+        {
+            TempData["ErrorMessage"] = "Kh\u00f4ng t\u00ecm th\u1ea5y t\u00e0i li\u1ec7u ho\u1eb7c b\u1ea1n kh\u00f4ng c\u00f3 quy\u1ec1n t\u1ea3i xu\u1ed1ng.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var (filePath, originalFileName) = file.Value;
+        var mimeType = GetMimeType(originalFileName);
+        var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return File(fileStream, mimeType, originalFileName);
+    }
+
+    private static string GetMimeType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf"  => "application/pdf",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            _       => "application/octet-stream"
+        };
+    }
+
     private int GetCurrentUserId()
     {
         var value = User.FindFirstValue(ClaimTypes.NameIdentifier);

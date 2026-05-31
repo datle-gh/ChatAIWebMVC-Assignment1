@@ -41,4 +41,11 @@ public interface IDocumentService
         int userId,
         string? userRole,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Returns (filePath, originalFileName) for download, or null if not found / unauthorized.</summary>
+    Task<(string FilePath, string OriginalFileName)?> GetDocumentFileAsync(
+        int documentId,
+        int requestingUserId,
+        string? requestingUserRole,
+        CancellationToken cancellationToken = default);
 }
